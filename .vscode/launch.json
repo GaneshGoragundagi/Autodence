@@ -1,0 +1,14 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Run Flask: Autodence Server",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/app.py",
+            "args": [],
+            "jinja": true,
+            "console": "integratedTerminal"
+        }
+    ]
+}

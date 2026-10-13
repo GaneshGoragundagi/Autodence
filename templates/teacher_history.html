@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+
+{% block title %}Attendance Session History — Faculty Portal | Autodence{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('teacher_dashboard') }}" class="text-decoration-none">Dashboard</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Session History</li>
+        </ol>
+    </nav>
+
+    <!-- Header Card -->
+    <div class="custom-card p-4 mb-4">
+        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="portal-icon bg-primary-subtle text-primary">
+                    <i class="bi bi-clock-history"></i>
+                </div>
+                <div>
+                    <h3 class="fw-bold mb-0 text-dark">Classroom Attendance Archive</h3>
+                    <p class="text-secondary small mb-0 mt-1">
+                        Historical audit logs of all AI sessions recorded for institutional compliance and report generation.
+                    </p>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center gap-2">
+                <a href="{{ url_for('teacher_export_csv', branch=selected_branch, semester=selected_semester, section=selected_section) }}" 
+                   class="btn btn-outline-success btn-sm">
+                    <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export Attendance (CSV)
+                </a>
+                <a href="{{ url_for('teacher_ai_attendance') }}" class="btn btn-primary-custom btn-sm">
+                    <i class="bi bi-camera me-1"></i> New Session
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <form method="GET" action="{{ url_for('teacher_history') }}" class="custom-card p-3 mb-4 bg-light">
+        <div class="row g-2 align-items-end">
+            <!-- Branch Filter -->
+            <div class="col-md-4">
+                <label class="form-label small fw-bold">Department / Branch</label>
+                <select class="form-select form-select-sm" name="branch">
+                    <option value="ALL" {{ 'selected' if selected_branch == 'ALL' else '' }}>-- All Branches --</option>
+                    {% for b in branches %}
+                        <option value="{{ b.code }}" {{ 'selected' if selected_branch == b.code else '' }}>
+                            {{ b.code }} — {{ b.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Semester Filter -->
+            <div class="col-md-3">
+                <label class="form-label small fw-bold">Semester</label>
+                <select class="form-select form-select-sm" name="semester">
+                    <option value="" {{ 'selected' if not selected_semester else '' }}>All Semesters</option>
+                    {% for s in range(1, 9) %}
+                        <option value="{{ s }}" {{ 'selected' if selected_semester == s|string else '' }}>Semester {{ s }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Section Filter -->
+            <div class="col-md-3">
+                <label class="form-label small fw-bold">Section</label>
+                <select class="form-select form-select-sm" name="section">
+                    <option value="" {{ 'selected' if not selected_section else '' }}>All Sections</option>
+                    <option value="A" {{ 'selected' if selected_section == 'A' else '' }}>Section A</option>
+                    <option value="B" {{ 'selected' if selected_section == 'B' else '' }}>Section B</option>
+                    <option value="C" {{ 'selected' if selected_section == 'C' else '' }}>Section C</option>
+                </select>
+            </div>
+
+            <!-- Apply & Reset Buttons -->
+            <div class="col-md-2 d-flex gap-2">
+                <button type="submit" class="btn btn-primary-custom btn-sm flex-grow-1">
+                    <i class="bi bi-funnel me-1"></i> Filter
+                </button>
+                <a href="{{ url_for('teacher_history') }}" class="btn btn-outline-secondary btn-sm" title="Reset Filters">
+                    <i class="bi bi-arrow-counterclockwise"></i>
+                </a>
+            </div>
+        </div>
+    </form>
+
+    <!-- Sessions Table Card -->
+    <div class="custom-card p-4">
+        {% if sessions and sessions|length > 0 %}
+            <div class="table-responsive">
+                <table class="table-custom">
+                    <thead>
+                        <tr>
+                            <th>Session ID</th>
+                            <th>Date & Time</th>
+                            <th>Subject / Course</th>
+                            <th>Cohort</th>
+                            <th>Present / Total</th>
+                            <th>Turnout %</th>
+                            <th>AI Detection</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in sessions %}
+                            {% set total_stu = (s.present_count or 0) + (s.absent_count or 0) %}
+                            {% set rate = ((s.present_count or 0) / total_stu * 100)|round(1) if total_stu > 0 else 0 %}
+                            <tr>
+                                <td>
+                                    <span class="badge bg-dark font-monospace">#SES-{{ s.id }}</span>
+                                </td>
+                                <td>
+                                    <div class="fw-bold text-dark">{{ s.session_date }}</div>
+                                    <div class="text-secondary small font-monospace">{{ s.session_time }}</div>
+                                </td>
+                                <td>
+                                    <div class="fw-bold text-dark">{{ s.subject_name }}</div>
+                                    <div class="text-secondary small">Instructor: {{ s.teacher_name }}</div>
+                                </td>
+                                <td>
+                                    <span class="badge badge-branch">{{ s.branch_code }}</span>
+                                    <span class="badge bg-light text-dark border">Sem {{ s.semester }}-{{ s.section }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge badge-present me-1">{{ s.present_count or 0 }} Present</span>
+                                    <span class="badge badge-absent">{{ s.absent_count or 0 }} Absent</span>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="progress flex-grow-1" style="height: 6px; width: 60px;">
+                                            <div class="progress-bar {{ 'bg-success' if rate >= 75 else 'bg-warning' }}" 
+                                                 role="progressbar" data-percent="{{ rate }}"></div>
+                                        </div>
+                                        <span class="small font-monospace fw-bold">{{ rate }}%</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="small text-muted">
+                                        <i class="bi bi-camera-fill text-primary me-1"></i> {{ s.faces_detected }} detected
+                                    </span>
+                                </td>
+                                <td class="text-end">
+                                    <a href="{{ url_for('teacher_session_details', session_id=s.id) }}" class="btn btn-outline-primary btn-sm">
+                                        <i class="bi bi-eye me-1"></i> View Audit
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <div class="portal-icon bg-light text-muted mx-auto mb-3" style="width: 64px; height: 64px;">
+                    <i class="bi bi-calendar-x fs-2"></i>
+                </div>
+                <h5 class="fw-bold text-dark">No Attendance Sessions Found</h5>
+                <p class="text-secondary small mb-3">No recorded lecture sessions match your current department and semester filter criteria.</p>
+                <a href="{{ url_for('teacher_ai_attendance') }}" class="btn btn-primary-custom btn-sm">
+                    <i class="bi bi-camera me-1"></i> Take AI Attendance Now
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('[data-percent]').forEach(el => {
+        el.style.width = el.dataset.percent + '%';
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+
+{% block title %}Attendance Dispute Inbox — Faculty Portal | Autodence{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('teacher_dashboard') }}" class="text-decoration-none">Dashboard</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Dispute & Corrections Inbox</li>
+        </ol>
+    </nav>
+
+    <!-- Header Card -->
+    <div class="custom-card p-4 mb-4">
+        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="portal-icon bg-warning-subtle text-warning">
+                    <i class="bi bi-inbox-fill text-dark"></i>
+                </div>
+                <div>
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <h3 class="fw-bold mb-0 text-dark">Student Attendance Dispute Inbox</h3>
+                        <span class="badge bg-danger font-monospace">{{ requests|length }} Pending</span>
+                    </div>
+                    <p class="text-secondary small mb-0 mt-1">
+                        Review student grievances regarding facial recognition misidentifications or false absences.
+                    </p>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center gap-2">
+                <a href="{{ url_for('teacher_dashboard') }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-arrow-left me-1"></i> Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Requests List -->
+    {% if requests and requests|length > 0 %}
+        <div class="row g-4">
+            {% for req in requests %}
+                <div class="col-lg-6">
+                    <div class="custom-card p-4 h-100 border-start border-4 border-warning">
+                        <div class="d-flex justify-content-between align-items-start mb-3 pb-2 border-bottom">
+                            <div>
+                                <span class="badge bg-dark font-monospace mb-1">#CR-{{ req.request_id }}</span>
+                                <h5 class="fw-bold text-dark mb-0">{{ req.student_name }}</h5>
+                                <div class="d-flex align-items-center gap-2 mt-1">
+                                    <span class="usn-tag">{{ req.usn }}</span>
+                                    <span class="badge badge-branch">{{ req.branch_code }}</span>
+                                    <span class="badge bg-light text-dark border">Sem {{ req.semester }}-{{ req.section }}</span>
+                                </div>
+                            </div>
+                            <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1">
+                                Pending Action
+                            </span>
+                        </div>
+
+                        <!-- Class Session Details -->
+                        <div class="bg-light p-3 rounded-3 border mb-3 small">
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <span class="text-muted d-block">Subject:</span>
+                                    <strong class="text-dark">{{ req.subject_name }}</strong>
+                                </div>
+                                <div class="col-6">
+                                    <span class="text-muted d-block">Lecture Date:</span>
+                                    <strong class="text-dark">{{ req.session_date }}</strong>
+                                </div>
+                                <div class="col-6">
+                                    <span class="text-muted d-block">Recorded Status:</span>
+                                    <span class="badge badge-absent">{{ req.current_attendance_status }}</span>
+                                </div>
+                                <div class="col-6">
+                                    <span class="text-muted d-block">Request Filed:</span>
+                                    <span class="text-muted font-monospace">{{ req.created_at[:10] if req.created_at else 'Recent' }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Student's Written Justification -->
+                        <div class="mb-4">
+                            <label class="form-label small fw-bold text-secondary">Student Justification:</label>
+                            <div class="p-3 bg-white rounded border border-warning-subtle text-dark small fst-italic">
+                                &ldquo;{{ req.reason }}&rdquo;
+                            </div>
+                        </div>
+
+                        <!-- Teacher Decision Form -->
+                        <form method="POST" action="{{ url_for('teacher_corrections') }}" class="pt-3 border-top mt-auto">
+                            <input type="hidden" name="request_id" value="{{ req.request_id }}">
+
+                            <div class="mb-3">
+                                <label for="remarks_{{ req.request_id }}" class="form-label small">Faculty Review Remarks (Optional)</label>
+                                <input type="text" class="form-control form-control-sm" id="remarks_{{ req.request_id }}" 
+                                       name="review_remarks" placeholder="e.g. Verified classroom position / Approved" value="Verified in lecture hall.">
+                            </div>
+
+                            <div class="d-flex gap-2">
+                                <button type="submit" name="decision" value="Approved" class="btn btn-success btn-sm flex-grow-1">
+                                    <i class="bi bi-check2-circle me-1"></i> Approve & Mark Present
+                                </button>
+                                <button type="submit" name="decision" value="Rejected" class="btn btn-outline-danger btn-sm">
+                                    <i class="bi bi-x-circle me-1"></i> Reject
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="custom-card p-5 text-center">
+            <div class="portal-icon bg-success-subtle text-success mx-auto mb-3" style="width: 68px; height: 68px;">
+                <i class="bi bi-check2-all fs-2"></i>
+            </div>
+            <h4 class="fw-bold text-dark">No Pending Dispute Requests</h4>
+            <p class="text-secondary small mb-3">All student attendance correction grievances in your department have been reviewed and resolved.</p>
+            <a href="{{ url_for('teacher_dashboard') }}" class="btn btn-outline-custom btn-sm">
+                Return to Faculty Dashboard
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

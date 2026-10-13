@@ -1,0 +1,248 @@
+{% extends 'base.html' %}
+
+{% block title %}Face Biometric Calibration — {{ student.full_name }} | Autodence{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-9">
+            <!-- Navigation Breadcrumb -->
+            <nav aria-label="breadcrumb" class="mb-3">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('student_dashboard') }}" class="text-decoration-none">Dashboard</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Face Biometric Calibration</li>
+                </ol>
+            </nav>
+
+            <!-- Face Registration Header Card -->
+            <div class="custom-card p-4 mb-4">
+                <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="portal-icon bg-info-subtle text-info">
+                            <i class="bi bi-person-bounding-box text-primary"></i>
+                        </div>
+                        <div>
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <h3 class="fw-bold mb-0 text-dark">Facial Biometric Enrollment</h3>
+                                {% if student.face_registered %}
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                        <i class="bi bi-check2-circle me-1"></i> Biometric Active
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle">
+                                        <i class="bi bi-exclamation-triangle me-1"></i> Not Enrolled
+                                    </span>
+                                {% endif %}
+                            </div>
+                            <p class="text-secondary small mb-0 mt-1">
+                                Enrolls your frontal biometric signature into Autodence's OpenCV facial recognition engine.
+                            </p>
+                        </div>
+                    </div>
+
+                    <a href="{{ url_for('student_dashboard') }}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-arrow-left me-1"></i> Dashboard
+                    </a>
+                </div>
+            </div>
+
+            <!-- Guidelines Callout -->
+            <div class="alert alert-info border-info d-flex align-items-start gap-3 shadow-sm mb-4">
+                <i class="bi bi-info-circle-fill fs-4 text-primary flex-shrink-0 mt-1"></i>
+                <div class="small">
+                    <strong>AI Facial Recognition Quality Requirements:</strong>
+                    <ul class="mb-0 mt-1 ps-3">
+                        <li>Look straight into the lens with clear, even lighting on your face.</li>
+                        <li>Remove tinted sunglasses, caps, or face masks that obstruct facial landmarks.</li>
+                        <li>Ensure a clean, uncluttered background with no other people in frame.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="row g-4">
+                <!-- Live Webcam Capture or File Upload Card -->
+                <div class="col-md-7">
+                    <div class="custom-card p-4 h-100">
+                        <div class="d-flex align-items-center justify-content-between pb-3 border-bottom mb-3">
+                            <h5 class="fw-bold mb-0 text-dark">
+                                <i class="bi bi-camera-video me-2 text-primary"></i> Live Camera Capture
+                            </h5>
+                            <button id="toggleCameraBtn" type="button" class="btn btn-sm btn-outline-primary" onclick="toggleCamera()">
+                                <i class="bi bi-camera me-1"></i> Start Webcam
+                            </button>
+                        </div>
+
+                        <!-- Video Stream Preview -->
+                        <div class="position-relative bg-dark rounded-3 overflow-hidden text-center mb-3" style="min-height: 280px; display: flex; align-items: center; justify-content: center;">
+                            <video id="webcamVideo" autoplay playsinline class="w-100 h-100 d-none" style="object-fit: cover; max-height: 320px;"></video>
+                            <canvas id="snapshotCanvas" class="d-none"></canvas>
+
+                            <div id="cameraPlaceholder" class="p-4 text-white-50">
+                                <i class="bi bi-webcam fs-1 d-block mb-2 text-secondary"></i>
+                                <p class="mb-2">Click <strong>Start Webcam</strong> to take a live snapshot or upload a photo below.</p>
+                                <span class="badge bg-secondary">WebRTC Supported</span>
+                            </div>
+
+                            <!-- Target Reticle Overlay -->
+                            <div id="reticleOverlay" class="position-absolute top-50 start-50 translate-middle border border-2 border-primary rounded-circle d-none" 
+                                 style="width: 180px; height: 180px; pointer-events: none; opacity: 0.7; box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);">
+                            </div>
+                        </div>
+
+                        <!-- Snapshot Controls -->
+                        <div class="d-flex gap-2 mb-4 justify-content-center">
+                            <button id="captureBtn" type="button" class="btn btn-primary-custom btn-sm d-none" onclick="captureSnapshot()">
+                                <i class="bi bi-record-circle me-1"></i> Capture Snapshot
+                            </button>
+                            <button id="retakeBtn" type="button" class="btn btn-outline-secondary btn-sm d-none" onclick="retakeSnapshot()">
+                                <i class="bi bi-arrow-counterclockwise me-1"></i> Retake
+                            </button>
+                        </div>
+
+                        <!-- Or Upload File Form -->
+                        <div class="pt-3 border-top">
+                            <h6 class="fw-bold text-dark mb-2">Or Upload Image File:</h6>
+                            <form id="faceUploadForm" method="POST" action="{{ url_for('student_register_face') }}" enctype="multipart/form-data">
+                                <div class="mb-3">
+                                    <label for="face_photo" class="form-label small">Select high-resolution face image</label>
+                                    <input type="file" class="form-control" id="face_photo" name="face_photo" accept="image/png, image/jpeg, image/webp" required onchange="handleFileSelected(this)">
+                                </div>
+                                <button type="submit" id="submitEnrollBtn" class="btn btn-primary-custom w-100">
+                                    <i class="bi bi-cloud-arrow-up-fill me-1"></i> Enroll Facial Biometric
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Enrolled Biometric Status Card -->
+                <div class="col-md-5">
+                    <div class="custom-card p-4 h-100">
+                        <h5 class="fw-bold pb-2 border-bottom mb-3 text-dark">
+                            <i class="bi bi-shield-lock me-2 text-primary"></i> Current Biometric Status
+                        </h5>
+
+                        <div class="text-center p-3 bg-light rounded-3 border mb-3">
+                            {% if student.profile_photo %}
+                                <img src="{{ url_for('static', filename='uploads/profiles/' + student.profile_photo) }}" 
+                                     alt="{{ student.full_name }}" class="rounded-3 border shadow-sm mb-2" style="width: 140px; height: 140px; object-fit: cover;">
+                                <div class="fw-bold text-dark">{{ student.full_name }}</div>
+                                <span class="usn-tag mb-2">{{ student.usn }}</span>
+                                <div class="mt-2">
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                        <i class="bi bi-patch-check-fill me-1"></i> Face Template Active
+                                    </span>
+                                </div>
+                            {% else %}
+                                <div class="rounded-3 bg-secondary-subtle text-secondary d-flex align-items-center justify-content-center fw-bold fs-1 mx-auto mb-2" 
+                                     style="width: 140px; height: 140px; border: 2px dashed #cbd5e1;">
+                                    <i class="bi bi-person-x"></i>
+                                </div>
+                                <div class="fw-bold text-secondary">No Face Registered</div>
+                                <span class="usn-tag">{{ student.usn }}</span>
+                                <p class="text-danger small mt-2 mb-0">
+                                    <i class="bi bi-exclamation-circle me-1"></i> Required for automated AI attendance matching during classes.
+                                </p>
+                            {% endif %}
+                        </div>
+
+                        <div class="small text-secondary">
+                            <h6 class="fw-bold text-dark mb-1">How AI Recognition Works:</h6>
+                            <p class="mb-2">
+                                When faculty capture a wide-angle classroom photo, Autodence extracts detected face crops and compares color histograms & normalized cross-correlation embeddings against your enrolled template.
+                            </p>
+                            <div class="p-2 bg-light rounded border text-muted">
+                                <i class="bi bi-cpu me-1"></i> <strong>Engine:</strong> OpenCV Pre-trained Cascade & Multi-channel Matching.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let stream = null;
+const video = document.getElementById('webcamVideo');
+const canvas = document.getElementById('snapshotCanvas');
+const placeholder = document.getElementById('cameraPlaceholder');
+const reticle = document.getElementById('reticleOverlay');
+const captureBtn = document.getElementById('captureBtn');
+const retakeBtn = document.getElementById('retakeBtn');
+const toggleBtn = document.getElementById('toggleCameraBtn');
+const fileInput = document.getElementById('face_photo');
+
+async function toggleCamera() {
+    if (stream) {
+        stopCamera();
+    } else {
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
+            video.srcObject = stream;
+            video.classList.remove('d-none');
+            placeholder.classList.add('d-none');
+            reticle.classList.remove('d-none');
+            captureBtn.classList.remove('d-none');
+            toggleBtn.innerHTML = '<i class="bi bi-stop-circle me-1"></i> Stop Camera';
+            toggleBtn.classList.replace('btn-outline-primary', 'btn-outline-danger');
+        } catch (err) {
+            alert('Unable to access webcam: ' + err.message + '. Please use the manual image upload form below.');
+        }
+    }
+}
+
+function stopCamera() {
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+    }
+    video.classList.add('d-none');
+    placeholder.classList.remove('d-none');
+    reticle.classList.add('d-none');
+    captureBtn.classList.add('d-none');
+    retakeBtn.classList.add('d-none');
+    toggleBtn.innerHTML = '<i class="bi bi-camera me-1"></i> Start Webcam';
+    toggleBtn.classList.replace('btn-outline-danger', 'btn-outline-primary');
+}
+
+function captureSnapshot() {
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    canvas.toBlob(blob => {
+        const file = new File([blob], "biometric_snapshot.jpg", { type: "image/jpeg" });
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(file);
+        fileInput.files = dataTransfer.files;
+
+        video.classList.add('d-none');
+        canvas.classList.remove('d-none');
+        canvas.style.maxHeight = '320px';
+        canvas.style.width = '100%';
+        canvas.style.objectFit = 'cover';
+        captureBtn.classList.add('d-none');
+        retakeBtn.classList.remove('d-none');
+        reticle.classList.add('d-none');
+    }, 'image/jpeg', 0.95);
+}
+
+function retakeSnapshot() {
+    canvas.classList.add('d-none');
+    video.classList.remove('d-none');
+    captureBtn.classList.remove('d-none');
+    retakeBtn.classList.add('d-none');
+    reticle.classList.remove('d-none');
+}
+
+function handleFileSelected(input) {
+    if (input.files && input.files.length > 0) {
+        if (stream) {
+            stopCamera();
+        }
+    }
+}
+</script>
+{% endblock %}

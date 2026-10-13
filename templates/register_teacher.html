@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+
+{% block title %}Faculty Registration — Autodence{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-7">
+            <div class="custom-card p-4 p-md-5">
+                <div class="d-flex align-items-center justify-content-between pb-3 border-bottom mb-4">
+                    <div>
+                        <span class="badge bg-info-subtle text-dark mb-1">
+                            <i class="bi bi-person-workspace me-1"></i> Faculty Access
+                        </span>
+                        <h2 class="fw-bold mb-0">Teacher Registration</h2>
+                    </div>
+                    <span class="badge bg-warning-subtle text-warning border px-2 py-1">Prototype Mode</span>
+                </div>
+
+                <!-- Prototype Notice Banner -->
+                <div class="prototype-banner mb-4">
+                    <div class="d-flex gap-2">
+                        <i class="bi bi-info-circle-fill fs-5 mt-1"></i>
+                        <div>
+                            <strong>Prototype Registration Policy:</strong>
+                            <p class="mb-0 small">
+                                Direct faculty self-registration is currently enabled for development and mini-project demonstration. In institutional production mode, accounts are provisioned or verified by the College Administrator.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <form method="POST" action="{{ url_for('register_teacher') }}" id="teacherRegForm">
+                    <div class="row g-3">
+                        <!-- Full Name -->
+                        <div class="col-md-6">
+                            <label for="full_name" class="form-label">Full Name <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-person"></i></span>
+                                <input type="text" class="form-control" id="full_name" name="full_name" 
+                                       value="{{ data.full_name or '' }}" placeholder="e.g. Dr. Ramesh Kumar" required>
+                            </div>
+                        </div>
+
+                        <!-- Employee ID -->
+                        <div class="col-md-6">
+                            <label for="employee_id" class="form-label">Faculty / Employee ID <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-badge-ad"></i></span>
+                                <input type="text" class="form-control text-uppercase" id="employee_id" name="employee_id" 
+                                       value="{{ data.employee_id or '' }}" placeholder="e.g. EMP4012" required>
+                            </div>
+                            <div class="form-text">Your institutional teacher ID.</div>
+                        </div>
+
+                        <!-- College Email -->
+                        <div class="col-md-12">
+                            <label for="email" class="form-label">College Email Address <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                                <input type="email" class="form-control" id="email" name="email" 
+                                       value="{{ data.email or '' }}" placeholder="e.g. ramesh.cse@college.edu" required>
+                            </div>
+                        </div>
+
+                        <!-- Department / Branch -->
+                        <div class="col-md-12">
+                            <label for="branch_code" class="form-label">Primary Department / Branch <span class="text-danger">*</span></label>
+                            <select class="form-select" id="branch_code" name="branch_code" required>
+                                <option value="" disabled {{ 'selected' if not data.branch_code else '' }}>-- Select Assigned Department --</option>
+                                {% for branch in branches %}
+                                    <option value="{{ branch.code }}" {{ 'selected' if data.branch_code == branch.code else '' }}>
+                                        {{ branch.name }} ({{ branch.code }})
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">The department will default as your primary class management scope.</div>
+                        </div>
+
+                        <!-- Password -->
+                        <div class="col-md-6">
+                            <label for="password" class="form-label">Password <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-shield-lock"></i></span>
+                                <input type="password" class="form-control" id="password" name="password" minlength="6" placeholder="Min. 6 characters" required>
+                            </div>
+                        </div>
+
+                        <!-- Confirm Password -->
+                        <div class="col-md-6">
+                            <label for="confirm_password" class="form-label">Confirm Password <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-shield-check"></i></span>
+                                <input type="password" class="form-control" id="confirm_password" name="confirm_password" minlength="6" placeholder="Re-enter password" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 pt-3 border-top d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3">
+                        <span class="text-muted small">
+                            Already registered? <a href="{{ url_for('login', role='teacher') }}" class="fw-semibold">Sign in</a>
+                        </span>
+                        <button type="submit" class="btn btn-primary-custom px-4 py-2" style="background-color: #0284c7; border-color: #0284c7;">
+                            <i class="bi bi-person-check-fill me-1"></i> Register Faculty Account
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

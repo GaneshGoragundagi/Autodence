@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Autodence — AI-Powered Smart Attendance System</title>
+  
+  <!-- Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Safe Live Server & Flask Backend Bridge -->
+  <script>
+    // Graceful detection of Flask backend without crashing Live Server if Flask is offline
+    window.addEventListener('DOMContentLoaded', () => {
+      if (window.location.port !== '5000') {
+        fetch('http://127.0.0.1:5000/', { mode: 'no-cors' })
+          .then(() => {
+            const pill = document.getElementById('flask-backend-pill');
+            if (pill) pill.classList.remove('hidden');
+          })
+          .catch(() => {
+            // Flask offline - continue running smoothly in Live Server preview mode
+          });
+      }
+    });
+  </script>
+  
+  <!-- Custom Project CSS -->
+  <link rel="stylesheet" href="./static/css/style.css">
+  <link rel="icon" type="image/png" href="./static/images/logo.png">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Chart.js CDN for Analytics -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            surface: {
+              DEFAULT: '#f8f9fa',
+              dim: '#d9dadb',
+              bright: '#f8f9fa',
+              lowest: '#ffffff',
+              low: '#f3f4f5',
+              container: '#edeeef',
+              high: '#e7e8e9',
+              highest: '#e1e3e4',
+              variant: '#e1e3e4',
+            },
+            'on-surface': {
+              DEFAULT: '#191c1d',
+              variant: '#414753',
+            },
+            primary: {
+              DEFAULT: '#005ab4',
+              container: '#1c73db',
+              fixed: '#d6e3ff',
+              'fixed-dim': '#aac7ff',
+            },
+            secondary: {
+              DEFAULT: '#565d79',
+              container: '#d8deff',
+            },
+            outline: {
+              DEFAULT: '#727784',
+              variant: '#c1c6d5',
+            },
+            status: {
+              present: '#2EC4B6',
+              absent: '#E71D36',
+              pending: '#FF9F1C',
+            },
+            navy: '#0B132B'
+          },
+          boxShadow: {
+            ambient: '0 4px 20px -2px rgba(11, 19, 43, 0.06)',
+            elevated: '0 10px 30px -5px rgba(11, 19, 43, 0.12)',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #f8f9fa;
+      color: #191c1d;
+      font-family: 'Inter', sans-serif;
+    }
+    .ghost-border {
+      border: 1px solid #e1e3e4;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: #c1c6d5;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-surface">
+
+  <!-- TOP APP BAR -->
+  <header class="bg-surface-lowest ghost-border border-b sticky top-0 z-40 shadow-sm">
+    <div class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      
+      <!-- Logo & Academic Context -->
+      <div class="flex items-center space-x-6">
+        <div class="flex items-center space-x-2.5">
+          <img src="./static/images/logo.png" alt="Neon AI Logo" class="w-10 h-10 rounded-lg object-contain shadow-md drop-shadow-[0_0_10px_rgba(59,130,246,0.5)]">
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="font-bold text-xl tracking-tight text-on-surface">Autodence</span>
+              <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-primary-fixed text-primary font-mono">v2.4 AI Core</span>
+            </div>
+            <p class="text-[11px] text-on-surface-variant leading-none mt-0.5">Automated Optical Attendance Roster</p>
+          </div>
+        </div>
+
+        <div class="hidden md:block h-6 w-px bg-outline-variant"></div>
+
+        <!-- Course / Room Switcher -->
+        <div class="hidden md:flex items-center space-x-2 text-sm bg-surface-low px-3 py-1.5 rounded-lg ghost-border">
+          <i data-lucide="book-open" class="w-4 h-4 text-primary"></i>
+          <span class="font-semibold text-on-surface">CS-402: Distributed AI Systems</span>
+          <span class="text-outline">/</span>
+          <span class="text-on-surface-variant text-xs">Hall B-204 (Sec A)</span>
+        </div>
+      </div>
+
+      <!-- Live Stream Status & Actions -->
+      <div class="flex items-center space-x-3 sm:space-x-4">
+        <!-- Live Badge -->
+        <div class="flex items-center space-x-2 px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-full text-xs font-medium text-emerald-800">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span class="hidden sm:inline">Camera 01: Active</span>
+          <span class="font-mono text-[11px] text-emerald-700">30 FPS</span>
+        </div>
+
+        <!-- Flask Backend Bridge Pill (shown when backend is detected) -->
+        <a id="flask-backend-pill" href="http://127.0.0.1:5000/" target="_blank" class="hidden items-center space-x-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-full text-xs font-semibold text-blue-800 transition-colors">
+          <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+          <span>Open Full Portal ↗</span>
+        </a>
+
+        <!-- Quick Actions -->
+        <button onclick="openExportModal()" class="hidden sm:flex items-center space-x-1.5 px-3 py-1.5 text-xs font-medium bg-surface-low hover:bg-surface-container rounded-lg ghost-border transition-colors">
+          <i data-lucide="file-spreadsheet" class="w-4 h-4 text-on-surface-variant"></i>
+          <span>Export ERP</span>
+        </button>
+
+        <button onclick="refreshAIEngine()" class="flex items-center space-x-1.5 px-3 py-1.5 text-xs font-semibold bg-primary hover:bg-primary-container text-white rounded-lg shadow-sm transition-all active:scale-95">
+          <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+          <span>Sync Session</span>
+        </button>
+
+        <!-- Instructor Profile -->
+        <div class="flex items-center space-x-2 pl-2 border-l border-surface-container">
+          <div class="w-8 h-8 rounded-full bg-secondary-container text-secondary flex items-center justify-center font-bold text-xs">
+            PK
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- MAIN WRAPPER -->
+  <main class="max-w-[1440px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 flex-1">
+    
+    <!-- STATS OVERVIEW CARDS (12-col grid) -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      
+      <!-- Total Enrolled -->
+      <div class="bg-surface-lowest p-5 rounded-lg ghost-border shadow-ambient flex flex-col justify-between">
+        <div class="flex items-center justify-between text-on-surface-variant text-xs font-medium">
+          <span>Enrolled Cadre</span>
+          <i data-lucide="users" class="w-4 h-4 text-secondary"></i>
+        </div>
+        <div class="mt-3 flex items-baseline space-x-2">
+          <span class="text-3xl font-bold text-on-surface" id="stat-total">64</span>
+          <span class="text-xs text-on-surface-variant">Students</span>
+        </div>
+        <div class="mt-2 text-[11px] text-outline font-medium">Batch 2023-2027 • Semester 6</div>
+      </div>
+
+      <!-- Present Metric -->
+      <div class="bg-surface-lowest p-5 rounded-lg ghost-border shadow-ambient border-l-4 border-l-status-present flex flex-col justify-between">
+        <div class="flex items-center justify-between text-on-surface-variant text-xs font-medium">
+          <span>Present (Verified)</span>
+          <span class="w-2.5 h-2.5 rounded-full bg-status-present"></span>
+        </div>
+        <div class="mt-3 flex items-baseline space-x-2">
+          <span class="text-3xl font-bold text-status-present" id="stat-present">54</span>
+          <span class="text-xs font-semibold text-status-present" id="stat-present-pct">84.4%</span>
+        </div>
+        <div class="mt-2 text-[11px] text-on-surface-variant">Automated facial matching score &gt; 92%</div>
+      </div>
+
+      <!-- Absent Metric -->
+      <div class="bg-surface-lowest p-5 rounded-lg ghost-border shadow-ambient border-l-4 border-l-status-absent flex flex-col justify-between">
+        <div class="flex items-center justify-between text-on-surface-variant text-xs font-medium">
+          <span>Absent</span>
+          <span class="w-2.5 h-2.5 rounded-full bg-status-absent"></span>
+        </div>
+        <div class="mt-3 flex items-baseline space-x-2">
+          <span class="text-3xl font-bold text-status-absent" id="stat-absent">6</span>
+          <span class="text-xs font-semibold text-status-absent" id="stat-absent-pct">9.3%</span>
+        </div>
+        <div class="mt-2 text-[11px] text-on-surface-variant">Absence notice auto-staged for review</div>
+      </div>
+
+      <!-- Pending / Manual Verification -->
+      <div class="bg-surface-lowest p-5 rounded-lg ghost-border shadow-ambient border-l-4 border-l-status-pending flex flex-col justify-between">
+        <div class="flex items-center justify-between text-on-surface-variant text-xs font-medium">
+          <span>Pending AI Audit</span>
+          <span class="w-2.5 h-2.5 rounded-full bg-status-pending animate-ping"></span>
+        </div>
+        <div class="mt-3 flex items-baseline space-x-2">
+          <span class="text-3xl font-bold text-status-pending" id="stat-pending">4</span>
+          <span class="text-xs font-semibold text-status-pending" id="stat-pending-pct">6.3%</span>
+        </div>
+        <div class="mt-2 text-[11px] text-on-surface-variant">Low confidence / partial occlusion flags</div>
+      </div>
+
+    </div>
+
+    <!-- MAIN TWO-COLUMN WORKSPACE: LEFT (FEED & TELEMETRY), RIGHT (ROSTER & OVERRIDE) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+      <!-- LEFT COLUMN: LIVE AI STREAM & LOGS (5 cols) -->
+      <div class="lg:col-span-5 space-y-6">
+        
+        <!-- Live AI Recognition Feed Widget -->
+        <div class="bg-surface-lowest rounded-lg ghost-border shadow-ambient overflow-hidden">
+          <div class="p-4 border-b ghost-border flex items-center justify-between bg-surface-low">
+            <div class="flex items-center space-x-2">
+              <i data-lucide="video" class="w-4 h-4 text-primary"></i>
+              <h2 class="text-sm font-semibold text-on-surface">Optical Telemetry Feed</h2>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span class="px-2 py-0.5 rounded text-[11px] font-mono bg-surface-container text-on-surface-variant">1080p @ 30fps</span>
+              <button onclick="toggleBoundingBoxes()" id="bbox-toggle-btn" class="p-1 rounded hover:bg-surface-high text-xs text-primary font-medium" title="Toggle Detection Overlay">
+                <i data-lucide="layers" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Video / Simulation Container with Simulated AI Bounding Boxes -->
+          <div class="relative bg-slate-900 aspect-video w-full flex items-center justify-center overflow-hidden group">
+            
+            <!-- Background Simulated Classroom Texture -->
+            <div class="absolute inset-0 bg-gradient-to-tr from-slate-950 via-slate-900 to-slate-800 flex items-center justify-center">
+              <!-- Grid overlay -->
+              <div class="w-full h-full opacity-10" style="background-image: radial-gradient(#ffffff 1px, transparent 1px); background-size: 20px 20px;"></div>
+            </div>
+
+            <!-- Simulated Live Detection Bounding Box 1 (Rahul Sharma - Match) -->
+            <div id="bbox-1" class="absolute top-[28%] left-[24%] w-24 h-28 border-2 border-status-present rounded bg-status-present/10 flex flex-col justify-between p-1 transition-all duration-500">
+              <div class="bg-status-present text-white text-[9px] font-bold px-1 py-0.5 rounded shadow self-start">
+                98.4% • USN 042
+              </div>
+              <div class="text-[8px] text-white font-medium bg-black/70 px-1 rounded truncate">
+                R. Sharma (Pres)
+              </div>
+            </div>
+
+            <!-- Simulated Live Detection Bounding Box 2 (Ananya Rao - Match) -->
+            <div id="bbox-2" class="absolute top-[32%] right-[28%] w-24 h-28 border-2 border-status-present rounded bg-status-present/10 flex flex-col justify-between p-1 transition-all duration-500">
+              <div class="bg-status-present text-white text-[9px] font-bold px-1 py-0.5 rounded shadow self-start">
+                96.1% • USN 018
+              </div>
+              <div class="text-[8px] text-white font-medium bg-black/70 px-1 rounded truncate">
+                A. Rao (Pres)
+              </div>
+            </div>
+
+            <!-- Simulated Live Detection Bounding Box 3 (Low Confidence / Occlusion) -->
+            <div id="bbox-3" class="absolute bottom-[20%] left-[45%] w-20 h-24 border-2 border-status-pending rounded bg-status-pending/10 flex flex-col justify-between p-1 animate-pulse">
+              <div class="bg-status-pending text-black text-[9px] font-bold px-1 py-0.5 rounded shadow self-start">
+                63.2% • USN 051?
+              </div>
+              <div class="text-[8px] text-white font-medium bg-black/70 px-1 rounded truncate">
+                Partial Occlusion
+              </div>
+            </div>
+
+            <!-- Realtime Telemetry HUD Overlay -->
+            <div class="absolute bottom-2 left-2 right-2 flex justify-between items-center text-[11px] font-mono text-white/80 bg-black/50 backdrop-blur-sm px-3 py-1 rounded">
+              <div class="flex items-center space-x-2">
+                <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                <span>MODEL: YOLO-FaceV8x</span>
+              </div>
+              <div>LATENCY: <span id="telemetry-latency">34</span>ms</div>
+              <div>RECOGNIZED: <span id="telemetry-matched">54</span>/64</div>
+            </div>
+
+          </div>
+
+          <!-- Live Recognition Stream Ticker -->
+          <div class="p-4 bg-surface-lowest">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-semibold text-on-surface">Recognition Event Log</span>
+              <span class="text-[10px] text-outline">Real-time inference queue</span>
+            </div>
+            <div id="telemetry-log-stream" class="space-y-2 max-h-48 overflow-y-auto custom-scroll pr-1 text-xs">
+              <!-- Logs dynamically generated -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Weekly & Period Attendance Analytics Chart -->
+        <div class="bg-surface-lowest p-5 rounded-lg ghost-border shadow-ambient">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-sm font-semibold text-on-surface">Lecture Attendance Trend</h3>
+              <p class="text-xs text-on-surface-variant">Historical attendance rate for CS-402 (Last 8 sessions)</p>
+            </div>
+            <span class="text-xs font-bold text-primary px-2 py-1 bg-primary-fixed rounded">Avg 89.2%</span>
+          </div>
+          <div class="h-44 w-full">
+            <canvas id="trendChart"></canvas>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT COLUMN: HIGH-DENSITY STUDENT ROSTER & CONTROLS (7 cols) -->
+      <div class="lg:col-span-7 space-y-4">
+        
+        <!-- Controls & Filters Container -->
+        <div class="bg-surface-lowest p-4 rounded-lg ghost-border shadow-ambient space-y-3">
+          
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <!-- Search Field -->
+            <div class="relative flex-1">
+              <i data-lucide="search" class="w-4 h-4 text-outline absolute left-3 top-1/2 -translate-y-1/2"></i>
+              <input 
+                type="text" 
+                id="search-input" 
+                oninput="filterRoster()" 
+                placeholder="Search by student name, USN, or roll number..."
+                class="w-full pl-9 pr-4 py-2 text-xs rounded-lg bg-surface-low border border-outline-variant focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+              />
+            </div>
+
+            <!-- Filter Pills -->
+            <div class="flex items-center space-x-1.5 overflow-x-auto pb-1 sm:pb-0" id="filter-pills">
+              <button onclick="setFilter('ALL')" id="pill-ALL" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-primary text-white shadow-sm transition-all">All (64)</button>
+              <button onclick="setFilter('PRESENT')" id="pill-PRESENT" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-surface-low hover:bg-surface-container text-on-surface transition-all">Present</button>
+              <button onclick="setFilter('ABSENT')" id="pill-ABSENT" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-surface-low hover:bg-surface-container text-on-surface transition-all">Absent</button>
+              <button onclick="setFilter('PENDING')" id="pill-PENDING" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-surface-low hover:bg-surface-container text-on-surface transition-all">Pending (4)</button>
+            </div>
+          </div>
+
+          <!-- Batch Action Bar -->
+          <div class="flex items-center justify-between pt-2 border-t border-surface-container text-xs">
+            <div class="flex items-center space-x-2">
+              <input type="checkbox" id="select-all-checkbox" onchange="toggleSelectAll(this)" class="rounded text-primary focus:ring-primary h-4 w-4 border-outline-variant">
+              <span class="text-on-surface-variant font-medium" id="selection-count-text">0 selected</span>
+            </div>
+            <div class="flex items-center space-x-2">
+              <button onclick="batchMarkStatus('PRESENT')" class="px-2.5 py-1 text-xs font-medium text-emerald-800 bg-emerald-50 hover:bg-emerald-100 rounded border border-emerald-200 transition-colors">
+                Mark Present
+              </button>
+              <button onclick="batchMarkStatus('ABSENT')" class="px-2.5 py-1 text-xs font-medium text-red-800 bg-red-50 hover:bg-red-100 rounded border border-red-200 transition-colors">
+                Mark Absent
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Student Attendance Table -->
+        <div class="bg-surface-lowest rounded-lg ghost-border shadow-ambient overflow-hidden">
+          <div class="overflow-x-auto max-h-[620px] custom-scroll">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead class="bg-surface-low border-b ghost-border sticky top-0 z-20 text-on-surface-variant font-semibold">
+                <tr>
+                  <th class="py-3 px-3 w-8"></th>
+                  <th class="py-3 px-4">Student &amp; USN</th>
+                  <th class="py-3 px-3">Verification</th>
+                  <th class="py-3 px-3">Confidence</th>
+                  <th class="py-3 px-4 text-center">Status</th>
+                  <th class="py-3 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="student-roster-body" class="divide-y divide-surface-container">
+                <!-- Roster Rows populated via JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- MANUAL OVERRIDE MODAL -->
+  <div id="override-modal" class="fixed inset-0 bg-navy/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-surface-lowest rounded-xl ghost-border shadow-elevated max-w-md w-full p-6 space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b ghost-border">
+        <div class="flex items-center space-x-2">
+          <i data-lucide="shield-alert" class="w-5 h-5 text-primary"></i>
+          <h3 class="font-bold text-base text-on-surface">AI Attendance Override</h3>
+        </div>
+        <button onclick="closeOverrideModal()" class="text-outline hover:text-on-surface">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Student snapshot & preview -->
+      <div class="p-3 bg-surface-low rounded-lg ghost-border flex items-center space-x-3">
+        <div id="modal-student-avatar" class="w-12 h-12 rounded-lg bg-primary-fixed text-primary flex items-center justify-center font-bold text-base">
+          RS
+        </div>
+        <div>
+          <div class="font-semibold text-sm text-on-surface" id="modal-student-name">Rahul Sharma</div>
+          <div class="text-xs font-mono text-on-surface-variant" id="modal-student-usn">USN: 1MS21CS042</div>
+          <div class="text-[11px] text-outline" id="modal-student-meta">Last detected: 10:14 AM (Hall Camera 01)</div>
+        </div>
+      </div>
+
+      <!-- Override Target Status -->
+      <div class="space-y-1.5">
+        <label class="text-xs font-semibold text-on-surface">Override Status To</label>
+        <div class="grid grid-cols-3 gap-2">
+          <button type="button" onclick="selectModalStatus('PRESENT')" id="modal-btn-PRESENT" class="py-2 text-xs font-semibold rounded-lg border text-center transition-all">
+            Present
+          </button>
+          <button type="button" onclick="selectModalStatus('ABSENT')" id="modal-btn-ABSENT" class="py-2 text-xs font-semibold rounded-lg border text-center transition-all">
+            Absent
+          </button>
+          <button type="button" onclick="selectModalStatus('PENDING')" id="modal-btn-PENDING" class="py-2 text-xs font-semibold rounded-lg border text-center transition-all">
+            Pending
+          </button>
+        </div>
+      </div>
+
+      <!-- Override Reason -->
+      <div class="space-y-1.5">
+        <label class="text-xs font-semibold text-on-surface">Audit Reason / Justification</label>
+        <select id="modal-reason-select" class="w-full text-xs p-2 rounded-lg bg-surface-low border border-outline-variant focus:ring-2 focus:ring-primary focus:outline-none">
+          <option value="Visual Occlusion / Mask">Facial Occlusion / Spectacles / Mask</option>
+          <option value="Manual Verification by Faculty">Verified In-Person by Faculty</option>
+          <option value="Official Department Duty">Official Duty / Lab Assignment</option>
+          <option value="Medical Certificate">Medical Exemption</option>
+          <option value="False Positive Correction">AI False Positive Correction</option>
+        </select>
+      </div>
+
+      <!-- Footer Buttons -->
+      <div class="flex items-center justify-end space-x-2 pt-3 border-t ghost-border">
+        <button onclick="closeOverrideModal()" class="px-4 py-2 text-xs font-medium text-on-surface-variant hover:bg-surface-low rounded-lg transition-colors">
+          Cancel
+        </button>
+        <button onclick="saveOverride()" class="px-4 py-2 text-xs font-semibold bg-primary hover:bg-primary-container text-white rounded-lg shadow-sm transition-all">
+          Commit Override
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div id="toast" class="fixed bottom-5 right-5 z-50 bg-navy text-white text-xs px-4 py-3 rounded-lg shadow-elevated flex items-center space-x-2 transition-transform duration-300 translate-y-24 opacity-0">
+    <i data-lucide="check-circle-2" class="w-4 h-4 text-status-present"></i>
+    <span id="toast-message">Status updated successfully</span>
+  </div>
+
+  <!-- JAVASCRIPT LOGIC & STATE MANAGEMENT -->
+  <script>
+    // STUDENT ROSTER STATE
+    const studentsData = [
+      { id: 1, name: "Rahul Sharma", usn: "1MS21CS042", status: "PRESENT", method: "Facial AI", confidence: 98.4, timestamp: "10:14:02 AM", avatarBg: "bg-blue-100 text-blue-700" },
+      { id: 2, name: "Ananya Rao", usn: "1MS21CS018", status: "PRESENT", method: "Facial AI", confidence: 96.1, timestamp: "10:14:08 AM", avatarBg: "bg-purple-100 text-purple-700" },
+      { id: 3, name: "Vikramaditya Bose", usn: "1MS21CS089", status: "PENDING", method: "AI Occlusion", confidence: 63.2, timestamp: "10:15:20 AM", avatarBg: "bg-amber-100 text-amber-700" },
+      { id: 4, name: "Pooja Hegde", usn: "1MS21CS054", status: "PRESENT", method: "Facial AI", confidence: 94.7, timestamp: "10:13:45 AM", avatarBg: "bg-emerald-100 text-emerald-700" },
+      { id: 5, name: "Karthik Subramanian", usn: "1MS21CS037", status: "ABSENT", method: "No Detection", confidence: 0.0, timestamp: "--", avatarBg: "bg-red-100 text-red-700" },
+      { id: 6, name: "Deepika Padukone", usn: "1MS21CS023", status: "PRESENT", method: "RFID Backup", confidence: 99.0, timestamp: "10:12:10 AM", avatarBg: "bg-indigo-100 text-indigo-700" },
+      { id: 7, name: "Aditya Verma", usn: "1MS21CS005", status: "PRESENT", method: "Facial AI", confidence: 97.2, timestamp: "10:14:15 AM", avatarBg: "bg-teal-100 text-teal-700" },
+      { id: 8, name: "Neha Kulkarni", usn: "1MS21CS048", status: "PENDING", method: "Low Light", confidence: 68.5, timestamp: "10:16:01 AM", avatarBg: "bg-orange-100 text-orange-700" },
+      { id: 9, name: "Rohan Deshmukh", usn: "1MS21CS071", status: "PRESENT", method: "Facial AI", confidence: 95.8, timestamp: "10:13:30 AM", avatarBg: "bg-cyan-100 text-cyan-700" },
+      { id: 10, name: "Shreya Ghoshal", usn: "1MS21CS079", status: "ABSENT", method: "No Detection", confidence: 0.0, timestamp: "--", avatarBg: "bg-rose-100 text-rose-700" },
+      { id: 11, name: "Tanmay Bhatt", usn: "1MS21CS085", status: "PRESENT", method: "Facial AI", confidence: 93.4, timestamp: "10:14:40 AM", avatarBg: "bg-violet-100 text-violet-700" },
+      { id: 12, name: "Meera Nambiar", usn: "1MS21CS044", status: "PRESENT", method: "Facial AI", confidence: 96.9, timestamp: "10:13:58 AM", avatarBg: "bg-pink-100 text-pink-700" },
+      { id: 13, name: "Arjun Reddy", usn: "1MS21CS011", status: "PENDING", method: "Side Angle", confidence: 71.0, timestamp: "10:15:44 AM", avatarBg: "bg-yellow-100 text-yellow-700" },
+      { id: 14, name: "Siddharth Malhotra", usn: "1MS21CS080", status: "ABSENT", method: "No Detection", confidence: 0.0, timestamp: "--", avatarBg: "bg-slate-100 text-slate-700" }
+    ];
+
+    let currentFilter = 'ALL';
+    let searchQuery = '';
+    let selectedStudentIds = new Set();
+    let currentEditingStudentId = null;
+    let modalSelectedStatus = 'PRESENT';
+
+    // RENDER ROSTER TABLE
+    function renderRoster() {
+      const tbody = document.getElementById('student-roster-body');
+      tbody.innerHTML = '';
+
+      const filtered = studentsData.filter(s => {
+        const matchesFilter = (currentFilter === 'ALL') || (s.status === currentFilter);
+        const matchesSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                              s.usn.toLowerCase().includes(searchQuery.toLowerCase());
+        return matchesFilter && matchesSearch;
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" class="text-center py-8 text-on-surface-variant">
+              <i data-lucide="search-x" class="w-6 h-6 mx-auto mb-2 text-outline"></i>
+              No students found matching your criteria.
+            </td>
+          </tr>
+        `;
+        lucide.createIcons();
+        return;
+      }
+
+      filtered.forEach(student => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-surface-low transition-colors";
+
+        const isChecked = selectedStudentIds.has(student.id);
+
+        // Status Badge Style
+        let statusBadge = '';
+        if (student.status === 'PRESENT') {
+          statusBadge = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#2EC4B6]/15 text-[#0d7d74] border border-[#2EC4B6]/30">● Present</span>`;
+        } else if (student.status === 'ABSENT') {
+          statusBadge = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#E71D36]/15 text-[#a80e22] border border-[#E71D36]/30">● Absent</span>`;
+        } else {
+          statusBadge = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#FF9F1C]/20 text-[#a35e00] border border-[#FF9F1C]/40 animate-pulse">● Pending Audit</span>`;
+        }
+
+        // Confidence Meter
+        const confColor = student.confidence >= 90 ? 'bg-status-present' : (student.confidence > 60 ? 'bg-status-pending' : 'bg-status-absent');
+
+        tr.innerHTML = `
+          <td class="py-3 px-3">
+            <input type="checkbox" onchange="toggleSelectStudent(${student.id}, this)" ${isChecked ? 'checked' : ''} class="rounded text-primary focus:ring-primary h-4 w-4 border-outline-variant">
+          </td>
+          <td class="py-3 px-4">
+            <div class="flex items-center space-x-3">
+              <div class="w-8 h-8 rounded-full ${student.avatarBg} font-bold text-xs flex items-center justify-center">
+                ${student.name.split(' ').map(n => n[0]).join('')}
+              </div>
+              <div>
+                <div class="font-semibold text-on-surface">${student.name}</div>
+                <div class="text-[11px] font-mono text-on-surface-variant">${student.usn}</div>
+              </div>
+            </div>
+          </td>
+          <td class="py-3 px-3">
+            <div class="text-on-surface font-medium">${student.method}</div>
+            <div class="text-[10px] text-outline">${student.timestamp}</div>
+          </td>
+          <td class="py-3 px-3">
+            <div class="flex items-center space-x-2">
+              <div class="w-16 bg-surface-container rounded-full h-1.5 overflow-hidden">
+                <div class="${confColor} h-1.5 rounded-full" style="width: ${student.confidence}%"></div>
+              </div>
+              <span class="font-mono text-[11px] text-on-surface font-medium">${student.confidence.toFixed(1)}%</span>
+            </div>
+          </td>
+          <td class="py-3 px-4 text-center">
+            ${statusBadge}
+          </td>
+          <td class="py-3 px-4 text-right">
+            <div class="flex items-center justify-end space-x-1">
+              <button onclick="quickToggleStatus(${student.id})" class="p-1.5 hover:bg-surface-high rounded text-on-surface-variant hover:text-primary transition-colors" title="Toggle Present/Absent">
+                <i data-lucide="repeat" class="w-4 h-4"></i>
+              </button>
+              <button onclick="openOverrideModal(${student.id})" class="p-1.5 hover:bg-surface-high rounded text-on-surface-variant hover:text-primary transition-colors" title="Override / Audit">
+                <i data-lucide="edit-3" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </td>
+        `;
+
+        tbody.appendChild(tr);
+      });
+
+      lucide.createIcons();
+      updateMetricCounts();
+    }
+
+    // UPDATE METRIC COUNTS
+    function updateMetricCounts() {
+      const total = studentsData.length;
+      const present = studentsData.filter(s => s.status === 'PRESENT').length;
+      const absent = studentsData.filter(s => s.status === 'ABSENT').length;
+      const pending = studentsData.filter(s => s.status === 'PENDING').length;
+
+      document.getElementById('stat-total').innerText = total;
+      document.getElementById('stat-present').innerText = present;
+      document.getElementById('stat-present-pct').innerText = `${((present / total) * 100).toFixed(1)}%`;
+      document.getElementById('stat-absent').innerText = absent;
+      document.getElementById('stat-absent-pct').innerText = `${((absent / total) * 100).toFixed(1)}%`;
+      document.getElementById('stat-pending').innerText = pending;
+      document.getElementById('stat-pending-pct').innerText = `${((pending / total) * 100).toFixed(1)}%`;
+      document.getElementById('telemetry-matched').innerText = present;
+
+      document.getElementById('pill-ALL').innerText = `All (${total})`;
+      document.getElementById('pill-PENDING').innerText = `Pending (${pending})`;
+      document.getElementById('selection-count-text').innerText = `${selectedStudentIds.size} selected`;
+    }
+
+    // SEARCH & FILTER
+    function filterRoster() {
+      searchQuery = document.getElementById('search-input').value;
+      renderRoster();
+    }
+
+    function setFilter(filterType) {
+      currentFilter = filterType;
+      ['ALL', 'PRESENT', 'ABSENT', 'PENDING'].forEach(f => {
+        const btn = document.getElementById(`pill-${f}`);
+        if (f === filterType) {
+          btn.className = "px-3 py-1.5 text-xs font-semibold rounded-lg bg-primary text-white shadow-sm transition-all";
+        } else {
+          btn.className = "px-3 py-1.5 text-xs font-medium rounded-lg bg-surface-low hover:bg-surface-container text-on-surface transition-all";
+        }
+      });
+      renderRoster();
+    }
+
+    // QUICK TOGGLE
+    function quickToggleStatus(id) {
+      const student = studentsData.find(s => s.id === id);
+      if (student) {
+        student.status = student.status === 'PRESENT' ? 'ABSENT' : 'PRESENT';
+        student.method = 'Manual Quick-Toggle';
+        showToast(`Updated ${student.name} to ${student.status}`);
+        renderRoster();
+      }
+    }
+
+    // SELECTION & BATCH ACTIONS
+    function toggleSelectStudent(id, el) {
+      if (el.checked) {
+        selectedStudentIds.add(id);
+      } else {
+        selectedStudentIds.delete(id);
+      }
+      document.getElementById('selection-count-text').innerText = `${selectedStudentIds.size} selected`;
+    }
+
+    function toggleSelectAll(el) {
+      if (el.checked) {
+        studentsData.forEach(s => selectedStudentIds.add(s.id));
+      } else {
+        selectedStudentIds.clear();
+      }
+      renderRoster();
+    }
+
+    function batchMarkStatus(newStatus) {
+      if (selectedStudentIds.size === 0) {
+        showToast("Please select at least one student.");
+        return;
+      }
+      selectedStudentIds.forEach(id => {
+        const student = studentsData.find(s => s.id === id);
+        if (student) {
+          student.status = newStatus;
+          student.method = 'Faculty Batch Override';
+        }
+      });
+      showToast(`Batch marked ${selectedStudentIds.size} students as ${newStatus}`);
+      selectedStudentIds.clear();
+      document.getElementById('select-all-checkbox').checked = false;
+      renderRoster();
+    }
+
+    // MODAL DIALOG
+    function openOverrideModal(id) {
+      const student = studentsData.find(s => s.id === id);
+      if (!student) return;
+
+      currentEditingStudentId = id;
+      document.getElementById('modal-student-name').innerText = student.name;
+      document.getElementById('modal-student-usn').innerText = `USN: ${student.usn}`;
+      document.getElementById('modal-student-meta').innerText = `Confidence: ${student.confidence}% • Method: ${student.method}`;
+      document.getElementById('modal-student-avatar').innerText = student.name.split(' ').map(n => n[0]).join('');
+
+      selectModalStatus(student.status);
+      document.getElementById('override-modal').classList.remove('hidden');
+    }
+
+    function selectModalStatus(status) {
+      modalSelectedStatus = status;
+      ['PRESENT', 'ABSENT', 'PENDING'].forEach(s => {
+        const btn = document.getElementById(`modal-btn-${s}`);
+        if (s === status) {
+          btn.className = "py-2 text-xs font-bold rounded-lg border-2 border-primary bg-primary/10 text-primary";
+        } else {
+          btn.className = "py-2 text-xs font-medium rounded-lg border border-outline-variant text-on-surface hover:bg-surface-low";
+        }
+      });
+    }
+
+    function closeOverrideModal() {
+      document.getElementById('override-modal').classList.add('hidden');
+      currentEditingStudentId = null;
+    }
+
+    function saveOverride() {
+      if (!currentEditingStudentId) return;
+      const student = studentsData.find(s => s.id === currentEditingStudentId);
+      const reason = document.getElementById('modal-reason-select').value;
+      if (student) {
+        student.status = modalSelectedStatus;
+        student.method = `Override: ${reason}`;
+        showToast(`Override saved for ${student.name}`);
+        closeOverrideModal();
+        renderRoster();
+      }
+    }
+
+    // TOAST DISPLAY
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toast-message').innerText = msg;
+      toast.classList.remove('translate-y-24', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-24', 'opacity-0');
+      }, 3000);
+    }
+
+    // EXPORT
+    function openExportModal() {
+      showToast("Generating official Attendance CSV / ERP payload...");
+      const csvContent = "data:text/csv;charset=utf-8,USN,Name,Status,Method,Confidence\n" +
+        studentsData.map(s => `${s.usn},${s.name},${s.status},${s.method},${s.confidence}`).join("\n");
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", "Autodence_CS402_SessionReport.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // TOGGLE BOUNDING BOX OVERLAY
+    let bboxesVisible = true;
+    function toggleBoundingBoxes() {
+      bboxesVisible = !bboxesVisible;
+      ['bbox-1', 'bbox-2', 'bbox-3'].forEach(id => {
+        document.getElementById(id).style.display = bboxesVisible ? 'flex' : 'none';
+      });
+      showToast(bboxesVisible ? "AI Bounding overlays enabled" : "AI Bounding overlays hidden");
+    }
+
+    // SYNC / REFRESH SIMULATION
+    function refreshAIEngine() {
+      showToast("Synchronizing with Edge GPU Camera node...");
+      document.getElementById('telemetry-latency').innerText = Math.floor(Math.random() * 15 + 25);
+      addLogEntry("Neural stream resynchronized (Buffer: 0 dropped frames)");
+    }
+
+    // LIVE EVENT TICKER
+    const sampleEvents = [
+      "Face match verified: Rahul Sharma (USN 042) @ 98.4%",
+      "Face match verified: Ananya Rao (USN 018) @ 96.1%",
+      "Partial occlusion detected: Vikramaditya Bose (USN 089) flagged for audit",
+      "RFID badge fallback matched: Deepika Padukone (USN 023)",
+      "Edge node temperature nominal (48°C), TensorRT latency 34ms"
+    ];
+
+    function addLogEntry(text) {
+      const logContainer = document.getElementById('telemetry-log-stream');
+      const time = new Date().toLocaleTimeString();
+      const div = document.createElement('div');
+      div.className = "flex items-start space-x-2 text-[11px] font-mono text-on-surface-variant bg-surface-low p-2 rounded border border-outline-variant/30";
+      div.innerHTML = `<span class="text-primary font-bold">[${time}]</span> <span>${text}</span>`;
+      logContainer.prepend(div);
+    }
+
+    // INITIALIZATION
+    window.onload = function() {
+      renderRoster();
+      sampleEvents.forEach(e => addLogEntry(e));
+
+      // Trend Chart Initialization
+      const ctx = document.getElementById('trendChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: ['Session 1', 'Session 2', 'Session 3', 'Session 4', 'Session 5', 'Session 6', 'Session 7', 'Session 8 (Today)'],
+          datasets: [{
+            label: 'Attendance Rate %',
+            data: [92, 88, 85, 94, 89, 87, 91, 84.4],
+            borderColor: '#005ab4',
+            backgroundColor: 'rgba(0, 90, 180, 0.08)',
+            fill: true,
+            tension: 0.35,
+            borderWidth: 2,
+            pointBackgroundColor: '#005ab4',
+            pointRadius: 3
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            y: {
+              min: 70,
+              max: 100,
+              ticks: { stepSize: 10, font: { family: 'Inter', size: 10 } },
+              grid: { color: '#edeeef' }
+            },
+            x: {
+              ticks: { font: { family: 'Inter', size: 10 } },
+              grid: { display: false }
+            }
+          }
+        }
+      });
+    };
+  </script>
+</body>
+</html>

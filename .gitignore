@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+build/
+dist/
+coverage/
+
+# Python cache & artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.log
+
+# Environment variables & secrets
+.env*
+!.env.example
+
+# Local SQLite databases
+*.db
+*.sqlite3
+
+# Uploaded test sessions
+static/uploads/sessions/*
+!static/uploads/sessions/.gitkeep
+
+# System files
+.DS_Store
+Thumbs.db

@@ -1,0 +1,292 @@
+{% extends 'base.html' %}
+
+{% block title %}Take AI Attendance — Faculty Portal | Autodence{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('teacher_dashboard') }}" class="text-decoration-none">Dashboard</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Take AI Attendance</li>
+        </ol>
+    </nav>
+
+    <!-- Header Card -->
+    <div class="custom-card p-4 mb-4">
+        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="portal-icon bg-primary-subtle text-primary">
+                    <i class="bi bi-camera-fill"></i>
+                </div>
+                <div>
+                    <h3 class="fw-bold mb-0 text-dark">AI Classroom Attendance Capture</h3>
+                    <p class="text-secondary small mb-0 mt-1">
+                        Upload or capture a single wide-angle classroom photo to automatically detect and recognize students.
+                    </p>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center gap-2">
+                <a href="{{ url_for('teacher_history') }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-clock-history me-1"></i> Session History
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Architecture Step Flow -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="custom-card p-3 text-center h-100 bg-light">
+                <div class="badge bg-primary rounded-circle mb-2" style="width: 28px; height: 28px; line-height: 20px;">1</div>
+                <h6 class="fw-bold text-dark mb-1">Upload Photo</h6>
+                <p class="text-secondary small mb-0">Capture or select wide classroom picture</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="custom-card p-3 text-center h-100 bg-light">
+                <div class="badge bg-info text-dark rounded-circle mb-2" style="width: 28px; height: 28px; line-height: 20px;">2</div>
+                <h6 class="fw-bold text-dark mb-1">OpenCV Detection</h6>
+                <p class="text-secondary small mb-0">Locates bounding boxes & skin landmarks</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="custom-card p-3 text-center h-100 bg-light">
+                <div class="badge bg-warning text-dark rounded-circle mb-2" style="width: 28px; height: 28px; line-height: 20px;">3</div>
+                <h6 class="fw-bold text-dark mb-1">Biometric Matching</h6>
+                <p class="text-secondary small mb-0">Compares against enrolled student database</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="custom-card p-3 text-center h-100 bg-light">
+                <div class="badge bg-success rounded-circle mb-2" style="width: 28px; height: 28px; line-height: 20px;">4</div>
+                <h6 class="fw-bold text-dark mb-1">Teacher Review</h6>
+                <p class="text-secondary small mb-0">Inspect marks, override any misses, and save</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Attendance Form -->
+    <form id="attendanceForm" method="POST" action="{{ url_for('teacher_ai_attendance') }}" enctype="multipart/form-data">
+        <div class="row g-4">
+            <!-- Left Column: Session Meta -->
+            <div class="col-lg-5">
+                <div class="custom-card p-4 h-100">
+                    <h5 class="fw-bold pb-2 border-bottom mb-3 text-dark">
+                        <i class="bi bi-sliders me-2 text-primary"></i> Class & Session Parameters
+                    </h5>
+
+                    <!-- Department / Branch -->
+                    <div class="mb-3">
+                        <label for="branch_code" class="form-label">Department / Branch <span class="text-danger">*</span></label>
+                        <select class="form-select" id="branch_code" name="branch_code" required>
+                            {% for b in branches %}
+                                <option value="{{ b.code }}" {{ 'selected' if b.code == teacher.branch_code else '' }}>
+                                    {{ b.code }} — {{ b.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Semester & Section -->
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label for="semester" class="form-label">Semester <span class="text-danger">*</span></label>
+                            <select class="form-select" id="semester" name="semester" required>
+                                {% for s in range(1, 9) %}
+                                    <option value="{{ s }}" {{ 'selected' if s == 6 else '' }}>Semester {{ s }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label for="section" class="form-label">Section <span class="text-danger">*</span></label>
+                            <select class="form-select" id="section" name="section" required>
+                                <option value="A" selected>Section A</option>
+                                <option value="B">Section B</option>
+                                <option value="C">Section C</option>
+                                <option value="D">Section D</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Subject Name -->
+                    <div class="mb-3">
+                        <label for="subject_name" class="form-label">Course / Subject <span class="text-danger">*</span></label>
+                        <input type="text" list="subjectList" class="form-control" id="subject_name" name="subject_name" 
+                               placeholder="e.g. Machine Learning, Cloud Computing" required value="Machine Learning">
+                        <datalist id="subjectList">
+                            {% for sub in subjects %}
+                                <option value="{{ sub.name }}">{{ sub.code }} - {{ sub.name }}</option>
+                            {% endfor %}
+                            <option value="Machine Learning">
+                            <option value="Database Management Systems">
+                            <option value="Computer Networks">
+                            <option value="Cloud Computing Architecture">
+                            <option value="Artificial Intelligence">
+                            <option value="Software Engineering">
+                        </datalist>
+                        <div class="form-text small">Select from course catalog or enter custom lecture title.</div>
+                    </div>
+
+                    <!-- Date & Time -->
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label for="session_date" class="form-label">Lecture Date <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="session_date" name="session_date" required>
+                        </div>
+                        <div class="col-6">
+                            <label for="session_time" class="form-label">Lecture Time <span class="text-danger">*</span></label>
+                            <input type="time" class="form-control" id="session_time" name="session_time" required>
+                        </div>
+                    </div>
+
+                    <div class="p-3 bg-light rounded border text-muted small mt-4">
+                        <i class="bi bi-shield-check text-success me-1"></i>
+                        <strong>Strict Isolation:</strong> Autodence automatically isolates and queries only the students matching this branch, semester, and section.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Classroom Photo Upload & Camera -->
+            <div class="col-lg-7">
+                <div class="custom-card p-4 h-100">
+                    <div class="d-flex align-items-center justify-content-between pb-2 border-bottom mb-3">
+                        <h5 class="fw-bold mb-0 text-dark">
+                            <i class="bi bi-image me-2 text-primary"></i> Classroom Photo Capture
+                        </h5>
+                        <button type="button" id="webcamToggleBtn" class="btn btn-outline-primary btn-sm" onclick="toggleTeacherWebcam()">
+                            <i class="bi bi-camera-video me-1"></i> Live Camera
+                        </button>
+                    </div>
+
+                    <!-- Camera Stream Box -->
+                    <div id="cameraBox" class="position-relative bg-dark rounded-3 overflow-hidden text-center mb-3 d-none" style="min-height: 280px; display: flex; align-items: center; justify-content: center;">
+                        <video id="tVideo" autoplay playsinline class="w-100 h-100" style="object-fit: cover; max-height: 320px;"></video>
+                        <canvas id="tCanvas" class="d-none"></canvas>
+                    </div>
+
+                    <div id="cameraActions" class="d-flex gap-2 justify-content-center mb-3 d-none">
+                        <button type="button" class="btn btn-success btn-sm" onclick="takeClassroomSnapshot()">
+                            <i class="bi bi-camera me-1"></i> Take Photo
+                        </button>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="retakeClassroomSnapshot()">
+                            <i class="bi bi-arrow-counterclockwise me-1"></i> Retake
+                        </button>
+                    </div>
+
+                    <!-- Dropzone / File Upload Preview -->
+                    <div id="dropzone" class="border border-2 border-dashed rounded-3 p-4 text-center mb-3 bg-light" 
+                         style="border-color: #cbd5e1 !important; cursor: pointer;" onclick="document.getElementById('classroom_photo').click()">
+                        <div id="uploadPrompt">
+                            <i class="bi bi-cloud-arrow-up fs-1 text-primary d-block mb-2"></i>
+                            <h6 class="fw-bold text-dark mb-1">Click to select classroom group photo</h6>
+                            <p class="text-secondary small mb-2">or drag and drop wide angle lecture hall image</p>
+                            <span class="badge bg-secondary font-monospace">JPG, PNG, WEBP (Max 16MB)</span>
+                        </div>
+                        <img id="imagePreview" src="" alt="Selected Classroom" class="img-fluid rounded border shadow-sm d-none" style="max-height: 260px;">
+                    </div>
+
+                    <input type="file" class="d-none" id="classroom_photo" name="classroom_photo" accept="image/png, image/jpeg, image/webp" onchange="previewClassroomPhoto(this)">
+
+                    <div class="d-grid mt-4">
+                        <button type="submit" id="processBtn" class="btn btn-primary-custom py-2 fs-6">
+                            <i class="bi bi-cpu-fill me-2"></i> Process & Detect Faces with OpenCV AI
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+// Prefill today's date and current time
+document.addEventListener('DOMContentLoaded', () => {
+    const today = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    
+    document.getElementById('session_date').value = today;
+    document.getElementById('session_time').value = `${hours}:${minutes}`;
+});
+
+function previewClassroomPhoto(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const preview = document.getElementById('imagePreview');
+            const prompt = document.getElementById('uploadPrompt');
+            preview.src = e.target.result;
+            preview.classList.remove('d-none');
+            prompt.classList.add('d-none');
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+// Live Classroom WebCam
+let tStream = null;
+const tVideo = document.getElementById('tVideo');
+const tCanvas = document.getElementById('tCanvas');
+const cameraBox = document.getElementById('cameraBox');
+const cameraActions = document.getElementById('cameraActions');
+const toggleCamBtn = document.getElementById('webcamToggleBtn');
+
+async function toggleTeacherWebcam() {
+    if (tStream) {
+        stopTeacherCam();
+    } else {
+        try {
+            tStream = await navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720 } });
+            tVideo.srcObject = tStream;
+            cameraBox.classList.remove('d-none');
+            cameraActions.classList.remove('d-none');
+            toggleCamBtn.innerHTML = '<i class="bi bi-stop-circle me-1"></i> Close Camera';
+            toggleCamBtn.classList.replace('btn-outline-primary', 'btn-outline-danger');
+        } catch (err) {
+            alert('Cannot access device camera: ' + err.message + '. Please upload the classroom image file.');
+        }
+    }
+}
+
+function stopTeacherCam() {
+    if (tStream) {
+        tStream.getTracks().forEach(t => t.stop());
+        tStream = null;
+    }
+    cameraBox.classList.add('d-none');
+    cameraActions.classList.add('d-none');
+    toggleCamBtn.innerHTML = '<i class="bi bi-camera-video me-1"></i> Live Camera';
+    toggleCamBtn.classList.replace('btn-outline-danger', 'btn-outline-primary');
+}
+
+function takeClassroomSnapshot() {
+    tCanvas.width = tVideo.videoWidth || 1280;
+    tCanvas.height = tVideo.videoHeight || 720;
+    const ctx = tCanvas.getContext('2d');
+    ctx.drawImage(tVideo, 0, 0, tCanvas.width, tCanvas.height);
+
+    tCanvas.toBlob(blob => {
+        const file = new File([blob], "classroom_session_capture.jpg", { type: "image/jpeg" });
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        document.getElementById('classroom_photo').files = dt.files;
+
+        // Update preview
+        const preview = document.getElementById('imagePreview');
+        const prompt = document.getElementById('uploadPrompt');
+        preview.src = tCanvas.toDataURL('image/jpeg');
+        preview.classList.remove('d-none');
+        prompt.classList.add('d-none');
+
+        stopTeacherCam();
+    }, 'image/jpeg', 0.95);
+}
+
+function retakeClassroomSnapshot() {
+    toggleTeacherWebcam();
+}
+</script>
+{% endblock %}

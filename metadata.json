@@ -1,0 +1,6 @@
+{
+  "name": "Autodence - Smart Attendance with AI",
+  "description": "AI-powered facial recognition smart attendance platform for academic institutions, group-photo biometric verification, roster management, and predictive student telemetry.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

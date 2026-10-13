@@ -1,0 +1,202 @@
+{% extends 'base.html' %}
+
+{% block title %}Faculty Dashboard — {{ teacher.full_name }} | Autodence{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header / Faculty Ribbon -->
+    <div class="custom-card p-4 mb-4">
+        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="rounded-circle bg-info-subtle text-info d-flex align-items-center justify-content-center fw-bold fs-3" 
+                     style="width: 72px; height: 72px; border: 2px solid #bae6fd;">
+                    <i class="bi bi-person-workspace text-primary"></i>
+                </div>
+                <div>
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <h2 class="h3 fw-bold mb-0 text-dark">{{ teacher.full_name }}</h2>
+                        <span class="badge bg-dark font-monospace">{{ teacher.employee_id }}</span>
+                        <span class="badge badge-branch">{{ teacher.branch_code }}</span>
+                        <span class="badge bg-success-subtle text-success border border-success-subtle">Authorized Faculty</span>
+                    </div>
+                    <p class="text-secondary small mb-0 mt-1">
+                        <i class="bi bi-building me-1"></i> Department of {{ teacher.branch_name }} &bull; 
+                        <i class="bi bi-envelope me-1"></i> {{ teacher.email }}
+                    </p>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-warning-subtle text-warning border px-2 py-1">Prototype Mode</span>
+                <a href="{{ url_for('logout') }}" class="btn btn-outline-danger btn-sm">
+                    <i class="bi bi-box-arrow-right me-1"></i> Logout
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Essential Feature: Branch-Wise Student Roster Management -->
+    <div class="custom-card p-4 mb-4">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center pb-3 border-bottom mb-3 gap-2">
+            <div>
+                <h4 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                    <i class="bi bi-people-fill text-primary"></i> Branch-Wise Student Management Roster
+                </h4>
+                <p class="text-secondary small mb-0">
+                    Students are strictly isolated by branch. Filter and view classroom rosters below.
+                </p>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-primary fs-6 px-3 py-2">
+                    {{ students|length }} Students in Current View
+                </span>
+            </div>
+        </div>
+
+        <!-- Filter Form -->
+        <form method="GET" action="{{ url_for('teacher_dashboard') }}" class="bg-light p-3 rounded-3 border mb-4">
+            <div class="row g-2 align-items-end">
+                <!-- Branch Filter -->
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold">Department / Branch</label>
+                    <select class="form-select form-select-sm" name="branch">
+                        <option value="ALL" {{ 'selected' if selected_branch == 'ALL' else '' }}>-- All Branches --</option>
+                        {% for branch in branches %}
+                            <option value="{{ branch.code }}" {{ 'selected' if selected_branch == branch.code else '' }}>
+                                {{ branch.code }} — {{ branch.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Semester Filter -->
+                <div class="col-md-2">
+                    <label class="form-label small fw-bold">Semester</label>
+                    <select class="form-select form-select-sm" name="semester">
+                        <option value="" {{ 'selected' if not selected_semester else '' }}>All Semesters</option>
+                        {% for s in range(1, 9) %}
+                            <option value="{{ s }}" {{ 'selected' if selected_semester == s|string else '' }}>Semester {{ s }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Section Filter -->
+                <div class="col-md-2">
+                    <label class="form-label small fw-bold">Section</label>
+                    <select class="form-select form-select-sm" name="section">
+                        <option value="" {{ 'selected' if not selected_section else '' }}>All Sections</option>
+                        <option value="A" {{ 'selected' if selected_section == 'A' else '' }}>Section A</option>
+                        <option value="B" {{ 'selected' if selected_section == 'B' else '' }}>Section B</option>
+                        <option value="C" {{ 'selected' if selected_section == 'C' else '' }}>Section C</option>
+                        <option value="D" {{ 'selected' if selected_section == 'D' else '' }}>Section D</option>
+                    </select>
+                </div>
+
+                <!-- Search Filter -->
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold">Search</label>
+                    <input type="text" class="form-control form-control-sm" name="search" 
+                           placeholder="Search Name, USN, or Email" value="{{ search_query or '' }}">
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="col-md-2 d-flex gap-1">
+                    <button type="submit" class="btn btn-primary-custom btn-sm flex-grow-1">
+                        <i class="bi bi-funnel-fill me-1"></i> Filter
+                    </button>
+                    <a href="{{ url_for('teacher_dashboard') }}" class="btn btn-outline-secondary btn-sm" title="Reset Filters">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                    </a>
+                </div>
+            </div>
+        </form>
+
+        <!-- Students Table -->
+        <div class="table-responsive">
+            <table class="table table-custom align-middle">
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">#</th>
+                        <th>USN</th>
+                        <th>Student Name</th>
+                        <th>Branch</th>
+                        <th>Semester & Section</th>
+                        <th>College Email</th>
+                        <th>Registered Date</th>
+                        <th class="text-end">Roster Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if students %}
+                        {% for s in students %}
+                            <tr>
+                                <td class="text-muted small">{{ loop.index }}</td>
+                                <td>
+                                    <span class="usn-tag">{{ s.usn }}</span>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        {% if s.profile_photo %}
+                                            <img src="{{ url_for('static', filename='uploads/profiles/' + s.profile_photo) }}" 
+                                                 alt="{{ s.full_name }}" class="rounded-circle border" style="width: 34px; height: 34px; object-fit: cover;">
+                                        {% else %}
+                                            <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center fw-bold" 
+                                                 style="width: 34px; height: 34px; font-size: 0.85rem;">
+                                                {{ s.full_name[0] | upper }}
+                                            </div>
+                                        {% endif %}
+                                        <span class="fw-semibold text-dark">{{ s.full_name }}</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge badge-branch">{{ s.branch_code }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border">
+                                        Sem {{ s.semester }} &bull; Sec {{ s.section }}
+                                    </span>
+                                </td>
+                                <td class="font-monospace small text-muted">{{ s.email }}</td>
+                                <td class="small text-muted">{{ s.created_at }}</td>
+                                <td class="text-end">
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                        <i class="bi bi-person-check-fill me-1"></i> Roster Active
+                                    </span>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="8" class="text-center py-5">
+                                <div class="text-muted">
+                                    <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary"></i>
+                                    <h6>No students found for this branch / filter.</h6>
+                                    <p class="small mb-0">Try clearing or adjusting the branch, semester, or section filters.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Future Phases Roadmap Banner -->
+    <div class="custom-card p-4 bg-light border">
+        <h5 class="fw-bold mb-2 text-dark">
+            <i class="bi bi-camera-fill text-primary me-2"></i>Upcoming Phases in Autodence Architecture
+        </h5>
+        <div class="row g-3 mt-1 small text-secondary">
+            <div class="col-md-6">
+                <strong>Phase 2 (Student Portal):</strong> Real-time attendance percentage computation, attendance logs, and face registration.
+            </div>
+            <div class="col-md-6">
+                <strong>Phase 3 (Teacher Portal Analytics):</strong> Attendance session records, CSV export, present/absent counters, and low-attendance tracking.
+            </div>
+            <div class="col-md-12">
+                <strong>Phase 4 (AI Group-Photo Attendance):</strong> Upload classroom group photo &rarr; OpenCV face detection &rarr; Pretrained facial feature matching against filtered class roster &rarr; Provisional attendance confirmation.
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

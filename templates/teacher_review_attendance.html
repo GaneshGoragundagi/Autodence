@@ -1,0 +1,271 @@
+{% extends 'base.html' %}
+
+{% block title %}Verify & Review Attendance — {{ data.subject_name }} | Autodence{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('teacher_dashboard') }}" class="text-decoration-none">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('teacher_ai_attendance') }}" class="text-decoration-none">AI Attendance</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Review & Confirm</li>
+        </ol>
+    </nav>
+
+    <!-- Header Banner -->
+    <div class="custom-card p-4 mb-4">
+        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <span class="badge bg-primary text-uppercase fs-6">AI Detection Complete</span>
+                    <span class="badge badge-branch">{{ data.branch_code }}</span>
+                    <span class="badge bg-light text-dark border">Sem {{ data.semester }} - Sec {{ data.section }}</span>
+                </div>
+                <h3 class="fw-bold mb-1 mt-2 text-dark">{{ data.subject_name }}</h3>
+                <p class="text-secondary small mb-0">
+                    <i class="bi bi-calendar-event me-1"></i> {{ data.session_date }} &bull;
+                    <i class="bi bi-clock me-1"></i> {{ data.session_time }} &bull;
+                    <i class="bi bi-person-badge me-1"></i> Instructor: {{ teacher.full_name }}
+                </p>
+            </div>
+
+            <div class="d-flex align-items-center gap-2">
+                <a href="{{ url_for('teacher_ai_attendance') }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-arrow-counterclockwise me-1"></i> Discard & Retake
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Diagnostic Metric Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="custom-card p-3 text-center border-start border-4 border-info">
+                <span class="text-secondary small fw-bold text-uppercase d-block mb-1">Faces Detected</span>
+                <span class="h3 fw-bold text-dark mb-0">{{ data.ai_result.total_faces_detected }}</span>
+                <span class="small text-muted d-block mt-1">OpenCV Bounding Boxes</span>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="custom-card p-3 text-center border-start border-4 border-success">
+                <span class="text-secondary small fw-bold text-uppercase d-block mb-1">Recognized</span>
+                <span class="h3 fw-bold text-success mb-0">{{ data.ai_result.matched_count }}</span>
+                <span class="small text-muted d-block mt-1">Matched to Roster</span>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="custom-card p-3 text-center border-start border-4 border-warning">
+                <span class="text-secondary small fw-bold text-uppercase d-block mb-1">Unrecognized</span>
+                <span class="h3 fw-bold text-warning mb-0">{{ data.ai_result.unrecognized_faces }}</span>
+                <span class="small text-muted d-block mt-1">Unmatched in Classroom</span>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="custom-card p-3 text-center border-start border-4 border-danger">
+                <span class="text-secondary small fw-bold text-uppercase d-block mb-1">Marked Absent</span>
+                <span class="h3 fw-bold text-danger mb-0">{{ data.ai_result.absent_count }}</span>
+                <span class="small text-muted d-block mt-1">Below Confidence Cutoff</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Duplicate Warning if present -->
+    {% if data.ai_result.has_duplicates %}
+        <div class="alert alert-warning border-warning d-flex align-items-center gap-3 mb-4">
+            <i class="bi bi-exclamation-triangle-fill fs-3 text-warning"></i>
+            <div>
+                <strong>Potential Duplicate Face Match Detected:</strong>
+                <p class="mb-0 small">
+                    One or more students were matched to the same detected face bounding box. Please inspect the highlighted students below and verify their attendance status.
+                </p>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Classroom Annotated Visual Inspection Card -->
+    {% if data.photo_filename %}
+        <div class="custom-card p-4 mb-4">
+            <h5 class="fw-bold pb-2 border-bottom mb-3 text-dark d-flex align-items-center justify-content-between">
+                <span><i class="bi bi-bounding-box-circles me-2 text-primary"></i> OpenCV Annotated Classroom Photo</span>
+                <span class="badge bg-light text-secondary border font-monospace small">AI Computer Vision Output</span>
+            </h5>
+            <div class="text-center bg-dark rounded-3 p-2 overflow-hidden">
+                <img src="{{ url_for('static', filename='uploads/sessions/' + data.photo_filename) }}" 
+                     alt="Annotated Classroom Group Photo" class="img-fluid rounded shadow-sm" style="max-height: 440px;">
+            </div>
+            <p class="text-muted small mt-2 mb-0 text-center">
+                <i class="bi bi-info-circle me-1"></i> Green bounding boxes indicate localized face regions extracted and processed by the AI matching engine.
+            </p>
+        </div>
+    {% endif %}
+
+    <!-- Main Attendance Review Form -->
+    <form id="saveAttendanceForm" method="POST" action="{{ url_for('teacher_save_attendance') }}">
+        <!-- Hidden Session Metadata -->
+        <input type="hidden" name="branch_code" value="{{ data.branch_code }}">
+        <input type="hidden" name="semester" value="{{ data.semester }}">
+        <input type="hidden" name="section" value="{{ data.section }}">
+        <input type="hidden" name="subject_name" value="{{ data.subject_name }}">
+        <input type="hidden" name="session_date" value="{{ data.session_date }}">
+        <input type="hidden" name="session_time" value="{{ data.session_time }}">
+        <input type="hidden" name="photo_filename" value="{{ data.photo_filename }}">
+        <input type="hidden" name="faces_detected" value="{{ data.ai_result.total_faces_detected }}">
+        <input type="hidden" name="faces_matched" value="{{ data.ai_result.matched_count }}">
+        <input type="hidden" name="faces_unrecognized" value="{{ data.ai_result.unrecognized_faces }}">
+
+        <div class="custom-card p-4 mb-4">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center pb-3 border-bottom mb-3 gap-2">
+                <div>
+                    <h5 class="fw-bold mb-0 text-dark">
+                        <i class="bi bi-person-check-fill me-2 text-primary"></i> Verify & Override Attendance Roster
+                    </h5>
+                    <p class="text-secondary small mb-0">
+                        Review AI proposed marks. You can toggle any student's status between Present and Absent before committing.
+                    </p>
+                </div>
+
+                <!-- Batch Actions -->
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-success btn-sm" onclick="markAll('Present')">
+                        <i class="bi bi-check-all me-1"></i> Mark All Present
+                    </button>
+                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="markAll('Absent')">
+                        <i class="bi bi-x-lg me-1"></i> Mark All Absent
+                    </button>
+                </div>
+            </div>
+
+            <!-- Student Verification Table -->
+            <div class="table-responsive">
+                <table class="table-custom">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>USN</th>
+                            <th>Enrolled Biometric</th>
+                            <th>AI Confidence</th>
+                            <th>AI Category</th>
+                            <th class="text-center" style="min-width: 180px;">Faculty Decision</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in data.ai_result.results %}
+                            <tr class="{{ 'table-warning' if r.is_duplicate else '' }}">
+                                <td>
+                                    <!-- Hidden Student ID reference -->
+                                    <input type="hidden" name="student_id[]" value="{{ r.student_id }}">
+                                    <input type="hidden" name="confidence_{{ r.student_id }}" value="{{ r.confidence }}">
+
+                                    <div class="d-flex align-items-center gap-3">
+                                        {% if r.profile_photo %}
+                                            <img src="{{ url_for('static', filename='uploads/profiles/' + r.profile_photo) }}" 
+                                                 alt="{{ r.full_name }}" class="rounded-circle border" style="width: 44px; height: 44px; object-fit: cover;">
+                                        {% else %}
+                                            <div class="rounded-circle bg-secondary-subtle text-secondary d-flex align-items-center justify-content-center fw-bold" 
+                                                 style="width: 44px; height: 44px;">
+                                                {{ r.full_name[0] | upper }}
+                                            </div>
+                                        {% endif %}
+                                        <div>
+                                            <div class="fw-bold text-dark">{{ r.full_name }}</div>
+                                            <div class="text-secondary small">Sec {{ r.section }} &bull; Sem {{ r.semester }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <td>
+                                    <span class="usn-tag">{{ r.usn }}</span>
+                                </td>
+
+                                <td>
+                                    {% if r.has_registered_photo %}
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                            <i class="bi bi-check2 me-1"></i> Enrolled
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle">
+                                            <i class="bi bi-x me-1"></i> No Face Photo
+                                        </span>
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="progress flex-grow-1" style="height: 7px; width: 80px;">
+                                            <div class="progress-bar {{ 'bg-success' if r.confidence >= 65 else ('bg-warning' if r.confidence >= 45 else 'bg-danger') }}" 
+                                                 role="progressbar" data-percent="{{ r.confidence }}"></div>
+                                        </div>
+                                        <span class="font-monospace small fw-bold">{{ r.confidence }}%</span>
+                                    </div>
+                                </td>
+
+                                <td>
+                                    {% if r.category == 'Recognized' %}
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                            <i class="bi bi-patch-check-fill me-1"></i> High Match
+                                        </span>
+                                    {% elif r.category == 'Uncertain' %}
+                                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle">
+                                            <i class="bi bi-question-circle me-1"></i> Uncertain
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-light text-muted border">
+                                            <i class="bi bi-dash me-1"></i> Not Detected
+                                        </span>
+                                    {% endif %}
+
+                                    {% if r.is_duplicate %}
+                                        <span class="badge bg-warning text-dark ms-1" title="Duplicate face match">Duplicate</span>
+                                    {% endif %}
+                                </td>
+
+                                <td class="text-center">
+                                    <div class="btn-group" role="group">
+                                        <input type="radio" class="btn-check status-radio" name="status_{{ r.student_id }}" id="present_{{ r.student_id }}" value="Present" {{ 'checked' if r.status == 'Present' else '' }}>
+                                        <label class="btn btn-outline-success btn-sm px-3" for="present_{{ r.student_id }}">
+                                            <i class="bi bi-check-lg me-1"></i> Present
+                                        </label>
+
+                                        <input type="radio" class="btn-check status-radio" name="status_{{ r.student_id }}" id="absent_{{ r.student_id }}" value="Absent" {{ 'checked' if r.status == 'Absent' else '' }}>
+                                        <label class="btn btn-outline-danger btn-sm px-3" for="absent_{{ r.student_id }}">
+                                            <i class="bi bi-x-lg me-1"></i> Absent
+                                        </label>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Commit Button -->
+            <div class="d-flex justify-content-between align-items-center pt-4 border-top mt-3">
+                <span class="text-secondary small">
+                    <i class="bi bi-shield-check text-primary me-1"></i> Saving writes attendance records and updates student percentage telemetry immediately.
+                </span>
+                <button type="submit" class="btn btn-primary-custom px-4 py-2 fs-6">
+                    <i class="bi bi-check2-circle me-1"></i> Confirm & Save Attendance Session
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('[data-percent]').forEach(el => {
+        el.style.width = el.dataset.percent + '%';
+    });
+});
+
+function markAll(status) {
+    const radios = document.querySelectorAll('.status-radio');
+    radios.forEach(radio => {
+        if (radio.value === status) {
+            radio.checked = true;
+        }
+    });
+}
+</script>
+{% endblock %}

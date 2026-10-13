@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+
+{% block title %}Sign In — Autodence{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="custom-card p-4 p-md-5">
+                <div class="text-center mb-4">
+                    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Autodence Logo" class="mx-auto mb-2 d-block" style="width: 68px; height: 68px; object-fit: contain; filter: drop-shadow(0 0 14px rgba(59, 130, 246, 0.55));">
+                    <span class="brand-badge fs-6 mb-2 d-inline-block"><i class="bi bi-shield-lock-fill me-1"></i>SECURE PORTAL</span>
+                    <h2 class="fw-bold mb-1">Welcome Back</h2>
+                    <p class="text-secondary small">Sign in to your Autodence institutional portal</p>
+                </div>
+
+                <!-- Role Selector Tabs -->
+                <div class="btn-group w-100 mb-4" role="group">
+                    <input type="radio" class="btn-check" name="role_selector" id="role_student" autocomplete="off" {{ 'checked' if selected_role == 'student' else '' }} onchange="setRole('student')">
+                    <label class="btn btn-outline-primary fw-semibold py-2" for="role_student">
+                        <i class="bi bi-mortarboard-fill me-1"></i> Student
+                    </label>
+
+                    <input type="radio" class="btn-check" name="role_selector" id="role_teacher" autocomplete="off" {{ 'checked' if selected_role == 'teacher' else '' }} onchange="setRole('teacher')">
+                    <label class="btn btn-outline-info fw-semibold py-2" for="role_teacher">
+                        <i class="bi bi-person-badge-fill me-1"></i> Teacher
+                    </label>
+                </div>
+
+                <form method="POST" action="{{ url_for('login') }}" id="loginForm">
+                    <input type="hidden" name="role" id="hidden_role" value="{{ selected_role }}">
+
+                    <!-- Identifier Input (USN / Employee ID / Email) -->
+                    <div class="mb-3">
+                        <label for="identifier" class="form-label" id="identifier_label">
+                            {{ 'College Email or USN' if selected_role == 'student' else 'College Email or Employee ID' }} <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-person-fill"></i></span>
+                            <input type="text" class="form-control" id="identifier" name="identifier" 
+                                   value="{{ identifier or '' }}" 
+                                   placeholder="{{ 'e.g. 1RV21CS042 or student@college.edu' if selected_role == 'student' else 'e.g. EMP4092 or prof@college.edu' }}" 
+                                   required autofocus>
+                        </div>
+                    </div>
+
+                    <!-- Password Input -->
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label for="password" class="form-label mb-0">Password <span class="text-danger">*</span></label>
+                            <span class="text-muted small">Min. 6 chars</span>
+                        </div>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-key-fill"></i></span>
+                            <input type="password" class="form-control" id="password" name="password" placeholder="Enter your password" required>
+                            <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility()">
+                                <i class="bi bi-eye" id="toggleIcon"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary-custom w-100 py-2 fs-6 mb-3" id="submitBtn">
+                        <i class="bi bi-box-arrow-in-right me-2"></i> Sign In to Portal
+                    </button>
+                </form>
+
+                <div class="text-center pt-3 border-top mt-3">
+                    <p class="text-muted small mb-2" id="register_hint">
+                        Don't have an account?
+                    </p>
+                    <a href="{{ url_for('register_student') }}" class="btn btn-sm btn-outline-secondary w-100" id="register_link">
+                        Register as a Student
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function setRole(role) {
+    document.getElementById('hidden_role').value = role;
+    const label = document.getElementById('identifier_label');
+    const input = document.getElementById('identifier');
+    const regLink = document.getElementById('register_link');
+
+    if (role === 'student') {
+        label.innerHTML = 'College Email or USN <span class="text-danger">*</span>';
+        input.placeholder = 'e.g. 1RV21CS042 or student@college.edu';
+        regLink.href = "{{ url_for('register_student') }}";
+        regLink.innerText = 'Register as a Student';
+    } else {
+        label.innerHTML = 'College Email or Employee ID <span class="text-danger">*</span>';
+        input.placeholder = 'e.g. EMP4092 or prof@college.edu';
+        regLink.href = "{{ url_for('register_teacher') }}";
+        regLink.innerText = 'Register as a Teacher';
+    }
+}
+
+function togglePasswordVisibility() {
+    const passwordInput = document.getElementById('password');
+    const toggleIcon = document.getElementById('toggleIcon');
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        toggleIcon.classList.remove('bi-eye');
+        toggleIcon.classList.add('bi-eye-slash');
+    } else {
+        passwordInput.type = 'password';
+        toggleIcon.classList.remove('bi-eye-slash');
+        toggleIcon.classList.add('bi-eye');
+    }
+}
+</script>
+{% endblock %}

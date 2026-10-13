@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+
+{% block title %}Session #{{ session_info.id }} Audit — {{ session_info.subject_name }} | Autodence{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('teacher_dashboard') }}" class="text-decoration-none">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('teacher_history') }}" class="text-decoration-none">Session History</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Session #{{ session_info.id }}</li>
+        </ol>
+    </nav>
+
+    <!-- Session Detail Header -->
+    <div class="custom-card p-4 mb-4">
+        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
+                    <span class="badge bg-dark font-monospace">Session #{{ session_info.id }}</span>
+                    <span class="badge badge-branch">{{ session_info.branch_code }}</span>
+                    <span class="badge bg-light text-dark border">Sem {{ session_info.semester }} - Sec {{ session_info.section }}</span>
+                </div>
+                <h3 class="fw-bold mb-1 text-dark">{{ session_info.subject_name }}</h3>
+                <p class="text-secondary small mb-0">
+                    <i class="bi bi-calendar-event me-1"></i> {{ session_info.session_date }} &bull; 
+                    <i class="bi bi-clock me-1"></i> {{ session_info.session_time }} &bull; 
+                    <i class="bi bi-person me-1"></i> Faculty: {{ session_info.teacher_name }}
+                </p>
+            </div>
+
+            <div class="d-flex align-items-center gap-2">
+                <a href="{{ url_for('teacher_history') }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-arrow-left me-1"></i> Back to History
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Metric Counters -->
+    {% set present_cnt = records | selectattr('status', 'equalto', 'Present') | list | length %}
+    {% set total_cnt = records | length %}
+    {% set pct = (present_cnt / total_cnt * 100)|round(1) if total_cnt > 0 else 0 %}
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="custom-card p-3 text-center border-start border-4 border-primary">
+                <span class="text-secondary small fw-bold text-uppercase d-block mb-1">Attendance Rate</span>
+                <span class="h3 fw-bold text-primary mb-0">{{ pct }}%</span>
+                <span class="small text-muted d-block mt-1">{{ present_cnt }} of {{ total_cnt }} Present</span>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="custom-card p-3 text-center border-start border-4 border-success">
+                <span class="text-secondary small fw-bold text-uppercase d-block mb-1">Present Students</span>
+                <span class="h3 fw-bold text-success mb-0">{{ present_cnt }}</span>
+                <span class="small text-muted d-block mt-1">Verified in Roster</span>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="custom-card p-3 text-center border-start border-4 border-danger">
+                <span class="text-secondary small fw-bold text-uppercase d-block mb-1">Absent Students</span>
+                <span class="h3 fw-bold text-danger mb-0">{{ total_cnt - present_cnt }}</span>
+                <span class="small text-muted d-block mt-1">Missed Class</span>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="custom-card p-3 text-center border-start border-4 border-info">
+                <span class="text-secondary small fw-bold text-uppercase d-block mb-1">Faces Detected</span>
+                <span class="h3 fw-bold text-dark mb-0">{{ session_info.faces_detected }}</span>
+                <span class="small text-muted d-block mt-1">{{ session_info.faces_matched }} Matched &bull; {{ session_info.faces_unrecognized }} Unrecognized</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Annotated Photo Box (if available) -->
+    {% if session_info.classroom_photo %}
+        <div class="custom-card p-4 mb-4">
+            <h5 class="fw-bold pb-2 border-bottom mb-3 text-dark">
+                <i class="bi bi-camera-fill me-2 text-primary"></i> Classroom AI Scan Image
+            </h5>
+            <div class="text-center bg-dark rounded-3 p-2 overflow-hidden">
+                <img src="{{ url_for('static', filename='uploads/sessions/' + session_info.classroom_photo) }}" 
+                     alt="Classroom Scan" class="img-fluid rounded shadow-sm" style="max-height: 400px;">
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Student Attendance List -->
+    <div class="custom-card p-4">
+        <div class="d-flex justify-content-between align-items-center pb-3 border-bottom mb-3">
+            <div>
+                <h5 class="fw-bold mb-0 text-dark">
+                    <i class="bi bi-people-fill me-2 text-primary"></i> Student Roster Attendance Records
+                </h5>
+                <p class="text-secondary small mb-0">Complete roster verification for this session.</p>
+            </div>
+            <span class="badge bg-secondary font-monospace">{{ records|length }} Students</span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table-custom">
+                <thead>
+                    <tr>
+                        <th>USN</th>
+                        <th>Student Name</th>
+                        <th>Class Section</th>
+                        <th>Status</th>
+                        <th>AI Confidence</th>
+                        <th>Marking Method</th>
+                        <th>Remarks / Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in records %}
+                        <tr>
+                            <td>
+                                <span class="usn-tag">{{ r.usn }}</span>
+                            </td>
+                            <td>
+                                <div class="fw-bold text-dark">{{ r.student_name }}</div>
+                                <div class="text-secondary small">{{ r.email }}</div>
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark border">Sem {{ r.semester }}-{{ r.section }}</span>
+                            </td>
+                            <td>
+                                <span class="badge {{ 'badge-present' if r.status == 'Present' else 'badge-absent' }} px-3 py-1">
+                                    {{ r.status }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if r.confidence is not none and r.confidence > 0 %}
+                                    <span class="font-monospace small fw-bold">{{ r.confidence }}%</span>
+                                {% else %}
+                                    <span class="text-muted small">&mdash;</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-info-subtle text-info border border-info-subtle font-monospace small">
+                                    {{ r.marking_method }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="small text-secondary">{{ r.remarks or 'Regular session record' }}</span>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

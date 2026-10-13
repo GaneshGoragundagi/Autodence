@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+
+{% block title %}My Attendance Disputes & Correction Requests | Autodence{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('student_dashboard') }}" class="text-decoration-none">Dashboard</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Disputes & Corrections</li>
+        </ol>
+    </nav>
+
+    <!-- Header Card -->
+    <div class="custom-card p-4 mb-4">
+        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="portal-icon bg-warning-subtle text-warning">
+                    <i class="bi bi-ticket-detailed text-dark"></i>
+                </div>
+                <div>
+                    <h3 class="fw-bold mb-0 text-dark">Attendance Correction Requests</h3>
+                    <p class="text-secondary small mb-0 mt-1">
+                        Track dispute requests submitted for classes where facial recognition recorded an absence.
+                    </p>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center gap-2">
+                <a href="{{ url_for('student_dashboard') }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Info banner -->
+    <div class="alert alert-light border d-flex align-items-center justify-content-between shadow-sm mb-4">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-info-circle-fill text-primary fs-5"></i>
+            <span class="small text-secondary">
+                Need to dispute an absence? Go to your <strong>Student Dashboard &rarr; Recent Class Attendance</strong> and click <strong>Dispute Absence</strong> on any marked absent record.
+            </span>
+        </div>
+        <span class="badge bg-secondary font-monospace">{{ disputes|length }} Tickets Filed</span>
+    </div>
+
+    <!-- Disputes List / Table -->
+    <div class="custom-card p-4">
+        {% if disputes and disputes|length > 0 %}
+            <div class="table-responsive">
+                <table class="table-custom">
+                    <thead>
+                        <tr>
+                            <th>Ticket ID</th>
+                            <th>Subject & Date</th>
+                            <th>Original Status</th>
+                            <th>Your Explanation</th>
+                            <th>Date Filed</th>
+                            <th>Review Status</th>
+                            <th>Faculty Feedback</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for d in disputes %}
+                            <tr>
+                                <td>
+                                    <span class="badge bg-dark font-monospace">#CR-{{ d.id }}</span>
+                                </td>
+                                <td>
+                                    <div class="fw-bold text-dark">{{ d.subject_name }}</div>
+                                    <div class="text-secondary small">
+                                        <i class="bi bi-calendar-event me-1"></i> {{ d.session_date }}
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge {{ 'badge-present' if d.current_status == 'Present' else 'badge-absent' }}">
+                                        {{ d.current_status }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="small text-dark p-2 bg-light rounded border text-wrap" style="max-width: 280px;">
+                                        &ldquo;{{ d.reason }}&rdquo;
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="small text-muted font-monospace">{{ d.created_at[:10] if d.created_at else 'Recent' }}</span>
+                                </td>
+                                <td>
+                                    {% if d.status == 'Approved' %}
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                                            <i class="bi bi-check-circle-fill me-1"></i> Approved
+                                        </span>
+                                    {% elif d.status == 'Rejected' %}
+                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1">
+                                            <i class="bi bi-x-circle-fill me-1"></i> Rejected
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1">
+                                            <i class="bi bi-hourglass-split me-1"></i> Pending Faculty Review
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if d.review_remarks %}
+                                        <span class="small text-secondary">{{ d.review_remarks }}</span>
+                                    {% else %}
+                                        <span class="small text-muted fst-italic">Awaiting faculty evaluation</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <div class="portal-icon bg-light text-muted mx-auto mb-3" style="width: 64px; height: 64px;">
+                    <i class="bi bi-clipboard-check fs-2"></i>
+                </div>
+                <h5 class="fw-bold text-dark">No Attendance Disputes Found</h5>
+                <p class="text-secondary small mb-3">You have not submitted any attendance correction requests. All your recorded attendances are synchronized.</p>
+                <a href="{{ url_for('student_dashboard') }}" class="btn btn-outline-custom btn-sm">
+                    Return to Student Dashboard
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
