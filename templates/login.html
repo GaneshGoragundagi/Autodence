@@ -9,7 +9,6 @@
             <div class="custom-card p-4 p-md-5">
                 <div class="text-center mb-4">
                     <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Autodence Logo" class="mx-auto mb-2 d-block" style="width: 68px; height: 68px; object-fit: contain; filter: drop-shadow(0 0 14px rgba(59, 130, 246, 0.55));">
-                    <span class="brand-badge fs-6 mb-2 d-inline-block"><i class="bi bi-shield-lock-fill me-1"></i>SECURE PORTAL</span>
                     <h2 class="fw-bold mb-1">Welcome Back</h2>
                     <p class="text-secondary small">Sign in to your Autodence institutional portal</p>
                 </div>
@@ -39,7 +38,7 @@
                             <span class="input-group-text"><i class="bi bi-person-fill"></i></span>
                             <input type="text" class="form-control" id="identifier" name="identifier" 
                                    value="{{ identifier or '' }}" 
-                                   placeholder="{{ 'e.g. 1RV21CS042 or student@college.edu' if selected_role == 'student' else 'e.g. EMP4092 or prof@college.edu' }}" 
+                                   placeholder="{{ 'e.g. 3GU24CS015 or student@GECcollege.edu' if selected_role == 'student' else 'e.g. EMP4092 or prof@college.edu' }}" 
                                    required autofocus>
                         </div>
                     </div>
@@ -88,7 +87,7 @@ function setRole(role) {
 
     if (role === 'student') {
         label.innerHTML = 'College Email or USN <span class="text-danger">*</span>';
-        input.placeholder = 'e.g. 1RV21CS042 or student@college.edu';
+        input.placeholder = 'e.g. 3GU24CS105 or student@GECcollege.edu';
         regLink.href = "{{ url_for('register_student') }}";
         regLink.innerText = 'Register as a Student';
     } else {

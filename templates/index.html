@@ -1,110 +1,169 @@
 {% extends 'base.html' %}
 
-{% block title %}Autodence — Smart AI Attendance Portal{% endblock %}
+{% block title %}Autodence — Institutional Login & Registration Portal{% endblock %}
 
 {% block content %}
-<!-- Hero Section -->
+<!-- Security Notice & Hero Gateway -->
 <section class="hero-wrapper text-center">
     <div class="container py-4">
         <div class="mb-3">
-            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Neon AI Logo" class="mx-auto rounded-3" style="width: 84px; height: 84px; object-fit: contain; filter: drop-shadow(0 0 18px rgba(59, 130, 246, 0.6));">
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Autodence Logo" class="mx-auto rounded-3" style="width: 84px; height: 84px; object-fit: contain; filter: drop-shadow(0 0 18px rgba(59, 130, 246, 0.6));">
         </div>
         <div class="hero-pill mb-3">
-            <i class="bi bi-cpu-fill"></i> Next-Gen Computer Vision Attendance
+            <i class="bi bi-shield-lock-fill text-primary"></i> Secure Institutional Authentication Gateway
         </div>
-        <h1 class="hero-heading mb-3">
-            Effortless Classroom Attendance <br>
-            Powered by <span class="hero-highlight">Artificial Intelligence</span>
+        <h1 class="hero-heading mb-2">
+            Welcome to <span class="hero-highlight">AUTODENCE</span>
         </h1>
-        <p class="text-secondary mx-auto mb-4 lead" style="max-width: 680px; font-size: 1.15rem;">
-            Autodence streamlines attendance tracking for engineering colleges with robust branch isolation, secure role-based portals, and automated classroom group-photo facial recognition.
+        <p class="text-secondary mx-auto mb-3 lead" style="max-width: 720px; font-size: 1.12rem;">
+            Automated Computer Vision Attendance & Academic Telemetry.
         </p>
 
-        <!-- Main Actions -->
-        <div class="d-flex flex-wrap justify-content-center gap-3 mb-5">
-            <a href="{{ url_for('login') }}" class="btn btn-primary-custom px-4 py-2 fs-6">
-                <i class="bi bi-box-arrow-in-right me-2"></i>Access Portal Login
-            </a>
-            <a href="{{ url_for('register_student') }}" class="btn btn-outline-custom px-4 py-2 fs-6">
-                <i class="bi bi-mortarboard-fill me-2"></i>Register as Student
-            </a>
-            <a href="{{ url_for('register_teacher') }}" class="btn btn-outline-dark px-4 py-2 fs-6" style="border-radius: 8px;">
-                <i class="bi bi-person-badge-fill me-2"></i>Teacher Registration
-            </a>
+        <!-- Access Restriction Alert Banner -->
+        <div class="alert alert-primary d-inline-flex align-items-center gap-2 px-4 py-2 border-0 shadow-sm rounded-pill text-start mb-4" style="background-color: #eff6ff; color: #1e40af;">
+            <i class="bi bi-info-circle-fill fs-5 text-primary"></i>
+            <span class="small fw-semibold">
+                <strong>Authentication Required:</strong> You must log in or register your institutional account (Student USN or Faculty ID) to access classroom rosters, attendance tracking, and facial recognition features.
+            </span>
         </div>
     </div>
 </section>
 
-<!-- Dual Portal Selection Section -->
-<section class="py-5">
+<!-- Dual Portal Gateway Section -->
+<section class="py-4">
     <div class="container">
-        <div class="text-center mb-5">
-            <h2 class="fw-bold mb-2">Select Your Portal</h2>
-            <p class="text-muted">Dedicated portals tailored for students and faculty members</p>
-        </div>
-
         <div class="row g-4 justify-content-center">
+            
             <!-- Student Portal Card -->
-            <div class="col-md-5">
-                <div class="custom-card portal-card p-4">
-                    <div class="d-flex align-items-center gap-3 mb-3">
-                        <div class="portal-icon bg-indigo-subtle text-primary bg-light">
-                            <i class="bi bi-mortarboard fs-2 text-primary"></i>
-                        </div>
-                        <div>
-                            <h3 class="h4 fw-bold mb-0">Student Portal</h3>
-                            <span class="badge bg-primary-subtle text-primary">Attendance Tracking</span>
+            <div class="col-lg-5 col-md-6">
+                <div class="custom-card portal-card p-4 p-md-5 h-100 d-flex flex-column">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="portal-icon bg-indigo-subtle text-primary bg-light">
+                                <i class="bi bi-mortarboard fs-2 text-primary"></i>
+                            </div>
+                            <div>
+                                <h2 class="h4 fw-bold mb-0">Student Portal</h2>
+                                <span class="badge bg-primary-subtle text-primary">Students Must Sign In</span>
+                            </div>
                         </div>
                     </div>
-                    <p class="text-secondary mb-4">
-                        View real-time subject-wise attendance percentages, review daily logs, receive low-attendance warnings, and verify your registered face profile.
+
+                    <p class="text-secondary small mb-3">
+                        Sign in with your University Seat Number (USN) or registered college email to view subject-wise attendance percentages and register your biometric face profile.
                     </p>
-                    <ul class="list-unstyled text-secondary small mb-4">
-                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>USN & college email authentication</li>
-                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Branch-segregated classroom roster</li>
-                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Attendance dispute & correction request</li>
-                    </ul>
-                    <div class="d-grid gap-2">
-                        <a href="{{ url_for('login', role='student') }}" class="btn btn-primary-custom">
-                            <i class="bi bi-box-arrow-in-right me-1"></i> Student Login
-                        </a>
-                        <a href="{{ url_for('register_student') }}" class="btn btn-outline-secondary btn-sm">
-                            New student? Register here
-                        </a>
+
+                    <!-- Direct Student Login Form -->
+                    <form method="POST" action="{{ url_for('login') }}" class="mb-3">
+                        <input type="hidden" name="role" value="student">
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold text-secondary">College Email or USN <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-person-fill text-muted"></i></span>
+                                <input type="text" class="form-control" name="identifier" 
+                                       placeholder="e.g. 3GU24CS105 or student@GECcollege.edu" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold text-secondary">Password <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-key-fill text-muted"></i></span>
+                                <input type="password" class="form-control" name="password" id="student_pwd" placeholder="Enter student password" required>
+                                <button class="btn btn-outline-secondary" type="button" onclick="toggleField('student_pwd', 'student_eye')">
+                                    <i class="bi bi-eye" id="student_eye"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary-custom w-100 py-2 fw-semibold">
+                            <i class="bi bi-box-arrow-in-right me-2"></i> Sign In to Student Portal
+                        </button>
+                    </form>
+
+                    <!-- Student Registration CTA -->
+                    <div class="pt-3 border-top mt-auto">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted small">New Student? First-time user?</span>
+                            <a href="{{ url_for('register_student') }}" class="btn btn-sm btn-outline-primary fw-semibold">
+                                <i class="bi bi-person-plus-fill me-1"></i> Register as Student
+                            </a>
+                        </div>
+                        <ul class="list-unstyled text-secondary small mb-0 mt-3 pt-2 border-top">
+                            <li class="mb-1"><i class="bi bi-check2-circle text-success me-1"></i> USN & Branch-isolated roster access</li>
+                            <li class="mb-1"><i class="bi bi-check2-circle text-success me-1"></i> Biometric facial photo registration</li>
+                            <li class="mb-0"><i class="bi bi-check2-circle text-success me-1"></i> Instant attendance dispute submission</li>
+                        </ul>
                     </div>
                 </div>
             </div>
 
-            <!-- Faculty / Teacher Portal Card -->
-            <div class="col-md-5">
-                <div class="custom-card portal-card teacher-card p-4">
-                    <div class="d-flex align-items-center gap-3 mb-3">
-                        <div class="portal-icon bg-info-subtle text-info bg-light">
-                            <i class="bi bi-person-workspace fs-2 text-info"></i>
-                        </div>
-                        <div>
-                            <h3 class="h4 fw-bold mb-0">Teacher Portal</h3>
-                            <span class="badge bg-info-subtle text-dark">Classroom Management</span>
+            <!-- Teacher / Faculty Portal Card -->
+            <div class="col-lg-5 col-md-6">
+                <div class="custom-card portal-card teacher-card p-4 p-md-5 h-100 d-flex flex-column">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="portal-icon bg-info-subtle text-info bg-light">
+                                <i class="bi bi-person-workspace fs-2 text-info"></i>
+                            </div>
+                            <div>
+                                <h2 class="h4 fw-bold mb-0">Teacher Portal</h2>
+                                <span class="badge bg-info-subtle text-dark">Faculty Authentication</span>
+                            </div>
                         </div>
                     </div>
-                    <p class="text-secondary mb-4">
-                        Conduct AI-powered group photo attendance sessions, filter student rosters by Branch, Semester & Section, and export comprehensive CSV records.
+
+                    <p class="text-secondary small mb-3">
+                        Sign in with your Employee ID or institutional email to take AI classroom group attendance, review automated recognition, and export semester CSV reports.
                     </p>
-                    <ul class="list-unstyled text-secondary small mb-4">
-                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Faculty Employee ID authentication</li>
-                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Branch, Semester & Section roster filters</li>
-                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Automated OpenCV group-photo matching</li>
-                    </ul>
-                    <div class="d-grid gap-2">
-                        <a href="{{ url_for('login', role='teacher') }}" class="btn btn-primary-custom" style="background-color: #0284c7; border-color: #0284c7;">
-                            <i class="bi bi-box-arrow-in-right me-1"></i> Teacher Login
-                        </a>
-                        <a href="{{ url_for('register_teacher') }}" class="btn btn-outline-secondary btn-sm">
-                            Faculty registration (Prototype)
-                        </a>
+
+                    <!-- Direct Teacher Login Form -->
+                    <form method="POST" action="{{ url_for('login') }}" class="mb-3">
+                        <input type="hidden" name="role" value="teacher">
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold text-secondary">Employee ID or College Email <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-person-badge-fill text-muted"></i></span>
+                                <input type="text" class="form-control" name="identifier" 
+                                       placeholder="e.g. EMP1024 or prof@college.edu" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold text-secondary">Password <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-key-fill text-muted"></i></span>
+                                <input type="password" class="form-control" name="password" id="teacher_pwd" placeholder="Enter teacher password" required>
+                                <button class="btn btn-outline-secondary" type="button" onclick="toggleField('teacher_pwd', 'teacher_eye')">
+                                    <i class="bi bi-eye" id="teacher_eye"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary-custom w-100 py-2 fw-semibold" style="background-color: #0284c7; border-color: #0284c7;">
+                            <i class="bi bi-box-arrow-in-right me-2"></i> Sign In to Teacher Portal
+                        </button>
+                    </form>
+
+                    <!-- Teacher Registration CTA -->
+                    <div class="pt-3 border-top mt-auto">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted small">New Faculty Member?</span>
+                            <a href="{{ url_for('register_teacher') }}" class="btn btn-sm btn-outline-info fw-semibold">
+                                <i class="bi bi-person-plus-fill me-1"></i> Register as Teacher
+                            </a>
+                        </div>
+                        <ul class="list-unstyled text-secondary small mb-0 mt-3 pt-2 border-top">
+                            <li class="mb-1"><i class="bi bi-check2-circle text-info me-1"></i> AI group-photo facial recognition</li>
+                            <li class="mb-1"><i class="bi bi-check2-circle text-info me-1"></i> Branch, Semester & Section roster filters</li>
+                            <li class="mb-0"><i class="bi bi-check2-circle text-info me-1"></i> Comprehensive CSV export & dispute review</li>
+                        </ul>
                     </div>
                 </div>
             </div>
+
         </div>
 
         <!-- Branch Support Grid -->
@@ -112,7 +171,7 @@
             <div class="row align-items-center">
                 <div class="col-lg-4">
                     <h5 class="fw-bold mb-1">Configured Engineering Branches</h5>
-                    <p class="text-muted small mb-lg-0">Students and rosters are strictly separated by branch</p>
+                    <p class="text-muted small mb-lg-0">Rosters and permissions are strictly segregated by department</p>
                 </div>
                 <div class="col-lg-8">
                     <div class="d-flex flex-wrap gap-2">
@@ -123,11 +182,30 @@
                         <span class="badge bg-light text-dark border p-2"><i class="bi bi-gear me-1"></i> ME</span>
                         <span class="badge bg-light text-dark border p-2"><i class="bi bi-building me-1"></i> CE</span>
                         <span class="badge bg-light text-dark border p-2"><i class="bi bi-robot me-1"></i> AIML</span>
-                        <span class="badge bg-light text-dark border p-2"><i class="bi bi-three-dots me-1"></i> Other</span>
+                        <span class="badge bg-light text-dark border p-2"><i class="bi bi-three-dots me-1"></i> OTHER</span>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleField(inputId, iconId) {
+    const input = document.getElementById(inputId);
+    const icon = document.getElementById(iconId);
+    if (!input || !icon) return;
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('bi-eye');
+        icon.classList.add('bi-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('bi-eye-slash');
+        icon.classList.add('bi-eye');
+    }
+}
+</script>
 {% endblock %}

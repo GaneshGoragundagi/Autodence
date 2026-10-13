@@ -20,7 +20,7 @@
           banner.style.cssText = 'background: #0f172a; color: #f8fafc; padding: 14px 20px; font-family: system-ui, -apple-system, sans-serif; font-size: 14px; border-bottom: 3px solid #3b82f6; display: flex; align-items: center; justify-content: space-between; z-index: 99999; position: relative; box-shadow: 0 4px 12px rgba(0,0,0,0.3);';
           banner.innerHTML = '<div style="display:flex; align-items:center; gap:10px;">' +
             '<span style="font-size:18px;">💡</span>' +
-            '<span><strong>Live Server Note:</strong> You opened a Jinja2 template directly. Flask templates require the Python backend to render dynamic content and login sessions. Run <code>python app.py</code> in the terminal and visit <a href="http://127.0.0.1:5000" style="color: #60a5fa; font-weight:600; text-decoration: underline;">http://127.0.0.1:5000</a> (or view the UI preview at <a href="/index.html" style="color: #60a5fa; font-weight:600; text-decoration: underline;">index.html</a>).</span>' +
+            '<span><strong>Live Server Note:</strong> You opened a Jinja2 template directly. Flask templates require the Python backend to render dynamic content and login sessions. Run <code>python app.py</code> in the terminal and visit <a href="http://127.0.0.1:5000" style="color: #60a5fa; font-weight:600; text-decoration: underline;">http://127.0.0.1:5000</a>.</span>' +
             '</div>' +
             '<button onclick="this.parentElement.remove()" style="background:#334155; color:#fff; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:12px;">✕ Dismiss</button>';
           document.body.prepend(banner);
@@ -130,13 +130,13 @@
                         </li>
                     {% else %}
                         <li class="nav-item">
-                            <a class="nav-link nav-link-custom" href="{{ url_for('index') }}">
-                                <i class="bi bi-house-door me-1"></i> Home
+                            <a class="nav-link nav-link-custom" href="{{ url_for('login', role='student') }}">
+                                <i class="bi bi-mortarboard-fill me-1"></i> Student Login
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link nav-link-custom" href="{{ url_for('login', role='student') }}">
-                                <i class="bi bi-box-arrow-in-right me-1"></i> Login
+                            <a class="nav-link nav-link-custom" href="{{ url_for('login', role='teacher') }}">
+                                <i class="bi bi-person-badge-fill me-1"></i> Teacher Login
                             </a>
                         </li>
                         <li class="nav-item dropdown">
